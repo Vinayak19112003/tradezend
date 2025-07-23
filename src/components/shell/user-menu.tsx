@@ -17,14 +17,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useStreamerMode } from '@/contexts/streamer-mode-context';
-import { Monitor, Moon, Sun, Tv } from 'lucide-react';
+import { Monitor, Moon, Settings, Sun, Tv } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 export function UserMenu() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isStreamerMode, toggleStreamerMode } = useStreamerMode();
   const { setTheme } = useTheme();
 
@@ -32,6 +34,15 @@ export function UserMenu() {
     logout();
     router.push('/login');
   };
+
+  const handleNavClick = (value: string) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    current.set("tab", value);
+    const search = current.toString();
+    const query = search ? `?${search}` : "";
+    router.push(`${pathname}${query}`);
+  };
+
 
   return (
     <DropdownMenu>
@@ -55,8 +66,9 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push('/settings')}>
-          Settings
+        <DropdownMenuItem onSelect={() => handleNavClick('settings')}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
         </DropdownMenuItem>
 
         <DropdownMenuSub>

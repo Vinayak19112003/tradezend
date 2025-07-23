@@ -12,7 +12,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { Home, LineChart, Menu, Package, Package2, PlusCircle, Settings, Users } from 'lucide-react';
+import { Home, LineChart, Menu, Package, Users, PlusCircle } from 'lucide-react';
 import { UserMenu } from './user-menu';
 import { useTradeForm } from '@/contexts/trade-form-context';
 import { Logo } from '../logo';
@@ -28,7 +28,6 @@ const NAV_LINKS = [
   { value: 'journal', text: 'Journal', icon: Package },
   { value: 'analytics', text: 'Analytics', icon: LineChart },
   { value: 'performance', text: 'Performance', icon: Users },
-  { value: 'settings', text: 'Settings', icon: Settings },
 ];
 
 export const Header = React.memo(function Header() {
@@ -85,6 +84,18 @@ export const Header = React.memo(function Header() {
                                         </button>
                                     </SheetClose>
                                 ))}
+                                 <SheetClose asChild>
+                                    <button
+                                        onClick={() => handleNavClick('settings')}
+                                        className={cn(
+                                            "flex items-center gap-4 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                                            (searchParams.get('tab') || 'dashboard') === 'settings' && "bg-muted text-primary"
+                                        )}
+                                    >
+                                        <Users className="h-4 w-4" />
+                                        Settings
+                                    </button>
+                                </SheetClose>
                             </nav>
                         </SheetContent>
                     </Sheet>
@@ -103,10 +114,6 @@ export const Header = React.memo(function Header() {
                         <Switch id="streamer-mode-switch" checked={isStreamerMode} onCheckedChange={toggleStreamerMode} />
                     </div>
                      <ModeToggle />
-                     <Button variant="ghost" size="icon" onClick={() => handleNavClick('settings')}>
-                        <Settings className="h-5 w-5" />
-                        <span className="sr-only">Settings</span>
-                     </Button>
                      <UserMenu />
                      <Button onClick={() => openForm()} size="sm" className="hidden lg:flex">
                         <PlusCircle className="mr-2 h-4 w-4" />

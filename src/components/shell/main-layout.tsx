@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTrades } from "@/contexts/trades-context";
 import { useAccountContext } from "@/contexts/account-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Home, LineChart, Package, Users } from 'lucide-react';
+import { Home, LineChart, Package, Users, Settings } from 'lucide-react';
 import DashboardPage from "@/app/(authed)/dashboard/page";
 import JournalPage from "@/app/(authed)/journal/page";
 import AnalyticsPage from "@/app/(authed)/analytics/page";
@@ -62,7 +62,6 @@ export default function MainLayout() {
     }, [tabFromUrl]);
 
     const handleTabChange = (value: string) => {
-        if (value === 'settings') return; // Settings is no longer a tab
         setActiveTab(value);
         const current = new URLSearchParams(Array.from(searchParams.entries()));
         current.set("tab", value);
@@ -118,7 +117,7 @@ export default function MainLayout() {
     }, [user, toast, refreshKey, selectedAccountId]);
 
     const CurrentPageComponent = NAV_TABS.find(tab => tab.value === activeTab)?.component || DashboardPage;
-
+    
     if (activeTab === 'settings') {
          return (
              <div className="mt-4">
