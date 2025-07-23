@@ -121,7 +121,6 @@ export default function MainLayout() {
     if (activeTab === 'settings') {
          return (
              <div className="mt-4">
-                 <h1 className="text-2xl font-bold tracking-tight font-headline capitalize">{activeTab}</h1>
                 {isLoading ? <TabSkeleton /> : <SettingsPage trades={trades} />}
              </div>
          )
