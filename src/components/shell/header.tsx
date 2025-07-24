@@ -23,7 +23,7 @@ import { useTrades } from '@/contexts/trades-context';
 export const Header = React.memo(function Header() {
     const { openForm } = useTradeForm();
     const isMobile = useIsMobile();
-    const { triggerRefresh, isTradesLoading } = useTrades();
+    const { isTradesLoading, triggerRefresh } = useTrades();
 
     return (
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
