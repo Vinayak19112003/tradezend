@@ -8,7 +8,8 @@
  */
 
 import * as React from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -16,40 +17,47 @@ import { Home, LineChart, Menu, Package, Users, PlusCircle } from 'lucide-react'
 import { UserMenu } from './user-menu';
 import { useTradeForm } from '@/contexts/trade-form-context';
 import { Logo } from '../logo';
-import { ModeToggle } from '../mode-toggle';
-import { useStreamerMode } from '@/contexts/streamer-mode-context';
-import { Switch } from '../ui/switch';
-import { Label } from '../ui/label';
-import { useAuth } from '@/hooks/use-auth';
 import { AccountSwitcher } from './account-switcher';
-
-const NAV_LINKS = [
-  { value: 'dashboard', text: 'Dashboard', icon: Home },
-  { value: 'journal', text: 'Journal', icon: Package },
-  { value: 'analytics', text: 'Analytics', icon: LineChart },
-  { value: 'performance', text: 'Performance', icon: Users },
-];
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 export const Header = React.memo(function Header() {
     const pathname = usePathname();
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const { user } = useAuth();
     const { openForm } = useTradeForm();
-    const { isStreamerMode, toggleStreamerMode } = useStreamerMode();
+    const isMobile = useIsMobile();
 
-    const handleNavClick = (value: string) => {
-        const current = new URLSearchParams(Array.from(searchParams.entries()));
-        current.set("tab", value);
-        const search = current.toString();
-        const query = search ? `?${search}` : "";
-        router.push(`${pathname}${query}`);
-    };
+    const NAV_LINKS = [
+      { href: '/dashboard', text: 'Dashboard', icon: Home },
+      { href: '/journal', text: 'Journal', icon: Package },
+      { href: '/analytics', text: 'Analytics', icon: LineChart },
+      { href: '/performance', text: 'Performance', icon: Users },
+      { href: '/settings', text: 'Settings', icon: Users }, // Using Users icon for settings as an example
+    ];
     
     return (
-        <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
             <div className='w-full flex items-center justify-between'>
                 <div className='flex items-center gap-4'>
+                     <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+                        <Link
+                            href="/dashboard"
+                            className="flex items-center gap-2 text-lg font-semibold md:text-base"
+                        >
+                            <Logo />
+                            <span className="sr-only">Anony Trading</span>
+                        </Link>
+                         {NAV_LINKS.map(link => (
+                            <Link
+                                key={link.href}
+                                href={link.href}
+                                className={cn(
+                                    "transition-colors hover:text-foreground",
+                                    pathname === link.href ? "text-foreground" : "text-muted-foreground"
+                                )}
+                            >
+                                {link.text}
+                            </Link>
+                         ))}
+                    </nav>
                     <Sheet>
                         <SheetTrigger asChild>
                             <Button
@@ -64,61 +72,41 @@ export const Header = React.memo(function Header() {
                         <SheetContent side="left">
                             <nav className="grid gap-6 text-lg font-medium">
                                 <SheetClose asChild>
-                                     <div className="flex items-center gap-2 text-lg font-semibold">
+                                     <Link
+                                        href="#"
+                                        className="flex items-center gap-2 text-lg font-semibold"
+                                    >
                                         <Logo />
                                         <span className="sr-only">Anony Trading</span>
-                                    </div>
+                                    </Link>
                                 </SheetClose>
 
                                 {NAV_LINKS.map(link => (
-                                    <SheetClose asChild key={link.value}>
-                                        <button
-                                            onClick={() => handleNavClick(link.value)}
+                                    <SheetClose asChild key={link.href}>
+                                        <Link
+                                            href={link.href}
                                             className={cn(
                                                 "flex items-center gap-4 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                                                (searchParams.get('tab') || 'dashboard') === link.value && "bg-muted text-primary"
+                                                pathname === link.href && "text-primary"
                                             )}
                                         >
                                             <link.icon className="h-4 w-4" />
                                             {link.text}
-                                        </button>
+                                        </Link>
                                     </SheetClose>
                                 ))}
-                                 <SheetClose asChild>
-                                    <button
-                                        onClick={() => handleNavClick('settings')}
-                                        className={cn(
-                                            "flex items-center gap-4 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                                            (searchParams.get('tab') || 'dashboard') === 'settings' && "bg-muted text-primary"
-                                        )}
-                                    >
-                                        <Users className="h-4 w-4" />
-                                        Settings
-                                    </button>
-                                </SheetClose>
                             </nav>
                         </SheetContent>
                     </Sheet>
-                    <div className="hidden md:block">
-                        <Logo />
-                    </div>
                 </div>
-                <div className="hidden md:flex flex-col items-start">
-                    <p className='text-sm font-semibold'>Welcome back,</p>
-                    <p className='text-xs text-muted-foreground'>{user?.email}</p>
-                </div>
+                
                 <div className="flex items-center gap-2">
                     <AccountSwitcher />
-                    <div className="hidden md:flex items-center gap-2">
-                        <Label htmlFor="streamer-mode-switch" className="text-sm text-muted-foreground">Streamer Mode</Label>
-                        <Switch id="streamer-mode-switch" checked={isStreamerMode} onCheckedChange={toggleStreamerMode} />
-                    </div>
-                     <ModeToggle />
-                     <UserMenu />
-                     <Button onClick={() => openForm()} size="sm" className="hidden lg:flex">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Trade
+                    <Button onClick={() => openForm()} size={isMobile ? "icon" : "default"}>
+                        <PlusCircle className={cn(!isMobile && "mr-2", "h-4 w-4")} />
+                        <span className="hidden md:inline">Add Trade</span>
                     </Button>
+                    <UserMenu />
                 </div>
             </div>
         </header>
