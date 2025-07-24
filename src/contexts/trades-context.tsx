@@ -15,10 +15,12 @@ import {
   query,
   runTransaction,
   where,
+  setDoc,
 } from "firebase/firestore";
 import { Trade } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { DEFAULT_ACCOUNTS } from '@/lib/constants';
 
 const TRADES_COLLECTION = 'trades';
 const ACCOUNTS_COLLECTION = 'settings';
@@ -67,16 +69,16 @@ export function TradesProvider({ children }: { children: ReactNode }) {
 
                 const accountsDoc = await transaction.get(accountsDocRef);
                 if (!accountsDoc.exists()) {
-                    console.warn("Accounts document not found for user. Skipping balance update.");
-                    return;
+                    console.warn("Accounts document not found for user. Creating it and skipping balance update for this trade.");
+                    transaction.set(accountsDocRef, { accounts: DEFAULT_ACCOUNTS });
+                    return; // Skip balance update on first trade
                 }
 
                 const accounts = accountsDoc.data().accounts || [];
                 const accountIndex = accounts.findIndex((acc: any) => acc.id === trade.accountId);
                 
                 if (accountIndex === -1) {
-                    console.warn(`Account with ID ${trade.accountId} not found. Trade will be added without balance update.`);
-                    return;
+                    throw new Error(`Account with ID ${trade.accountId} not found. Trade will not be saved.`);
                 };
 
                 const updatedAccounts = [...accounts];
@@ -88,9 +90,9 @@ export function TradesProvider({ children }: { children: ReactNode }) {
 
             triggerRefresh();
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error adding trade:", error);
-            toast({ variant: "destructive", title: "Error Saving Trade", description: "Could not save the trade." });
+            toast({ variant: "destructive", title: "Error Saving Trade", description: error.message || "Could not save the trade." });
             return false;
         }
     }, [getTradesCollectionRef, getAccountsDocRef, toast]);
@@ -151,7 +153,11 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                 const accounts = accountsDoc.data().accounts || [];
                 const accountIndex = accounts.findIndex((acc: any) => acc.id === trade.accountId);
 
-                if (accountIndex === -1) return;
+                if (accountIndex === -1) {
+                    console.warn(`Account with ID ${trade.accountId} not found. Skipping balance update.`);
+                    return;
+                };
+
 
                 const updatedAccounts = [...accounts];
                 const currentBalance = updatedAccounts[accountIndex].currentBalance ?? updatedAccounts[accountIndex].initialBalance;
@@ -162,9 +168,9 @@ export function TradesProvider({ children }: { children: ReactNode }) {
 
             triggerRefresh();
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error updating trade:", error);
-            toast({ variant: "destructive", title: "Error Updating Trade", description: "Could not update the trade." });
+            toast({ variant: "destructive", title: "Error Updating Trade", description: error.message || "Could not update the trade." });
             return false;
         }
     }, [getTradesCollectionRef, getAccountsDocRef, toast]);
@@ -195,7 +201,10 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                 const accounts = accountsDoc.data().accounts || [];
                 const accountIndex = accounts.findIndex((acc: any) => acc.id === tradeToDelete.accountId);
                 
-                if (accountIndex === -1) return;
+                if (accountIndex === -1) {
+                    console.warn(`Account with ID ${tradeToDelete.accountId} not found. Skipping balance update.`);
+                    return;
+                };
                 
                 const updatedAccounts = [...accounts];
                 const currentBalance = updatedAccounts[accountIndex].currentBalance ?? updatedAccounts[accountIndex].initialBalance;
@@ -206,9 +215,9 @@ export function TradesProvider({ children }: { children: ReactNode }) {
 
             triggerRefresh();
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error deleting trade:", error);
-            toast({ variant: "destructive", title: "Error Deleting Trade", description: "Could not delete the trade." });
+            toast({ variant: "destructive", title: "Error Deleting Trade", description: error.message || "Could not delete the trade." });
             return false;
         }
     }, [getTradesCollectionRef, getAccountsDocRef, toast]);
