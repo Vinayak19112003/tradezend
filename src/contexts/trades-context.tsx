@@ -61,31 +61,36 @@ export function TradesProvider({ children }: { children: ReactNode }) {
 
         try {
             await runTransaction(db, async (transaction) => {
+                // READ FIRST
+                const accountsDoc = await transaction.get(accountsDocRef);
+                
+                // PREPARE WRITES
                 const newTradeRef = doc(tradesCollection);
+
+                if (!accountsDoc.exists()) {
+                    console.warn("Accounts document not found for user. Creating it and skipping balance update for this trade.");
+                    transaction.set(accountsDocRef, { accounts: DEFAULT_ACCOUNTS });
+                } else {
+                    const accounts = accountsDoc.data().accounts || [];
+                    const accountIndex = accounts.findIndex((acc: any) => acc.id === trade.accountId);
+                    
+                    if (accountIndex === -1) {
+                        throw new Error(`Account with ID ${trade.accountId} not found. Trade will not be saved.`);
+                    };
+
+                    const updatedAccounts = [...accounts];
+                    const currentBalance = updatedAccounts[accountIndex].currentBalance ?? updatedAccounts[accountIndex].initialBalance;
+                    updatedAccounts[accountIndex].currentBalance = currentBalance + (trade.pnl || 0);
+
+                    // WRITE to accounts
+                    transaction.update(accountsDocRef, { accounts: updatedAccounts });
+                }
+                
+                // WRITE to trades
                 transaction.set(newTradeRef, {
                     ...trade,
                     date: Timestamp.fromDate(trade.date),
                 });
-
-                const accountsDoc = await transaction.get(accountsDocRef);
-                if (!accountsDoc.exists()) {
-                    console.warn("Accounts document not found for user. Creating it and skipping balance update for this trade.");
-                    transaction.set(accountsDocRef, { accounts: DEFAULT_ACCOUNTS });
-                    return; // Skip balance update on first trade
-                }
-
-                const accounts = accountsDoc.data().accounts || [];
-                const accountIndex = accounts.findIndex((acc: any) => acc.id === trade.accountId);
-                
-                if (accountIndex === -1) {
-                    throw new Error(`Account with ID ${trade.accountId} not found. Trade will not be saved.`);
-                };
-
-                const updatedAccounts = [...accounts];
-                const currentBalance = updatedAccounts[accountIndex].currentBalance ?? updatedAccounts[accountIndex].initialBalance;
-                updatedAccounts[accountIndex].currentBalance = currentBalance + (trade.pnl || 0);
-
-                transaction.update(accountsDocRef, { accounts: updatedAccounts });
             });
 
             triggerRefresh();
@@ -132,38 +137,41 @@ export function TradesProvider({ children }: { children: ReactNode }) {
         try {
             const tradeRef = doc(tradesCollection, trade.id);
             await runTransaction(db, async (transaction) => {
+                // READS FIRST
                 const originalTradeDoc = await transaction.get(tradeRef);
+                const accountsDoc = await transaction.get(accountsDocRef);
+
                 if (!originalTradeDoc.exists()) {
                     throw new Error("Original trade not found for update.");
                 }
+
+                // PREPARE WRITES
                 const originalTrade = originalTradeDoc.data() as Trade;
                 const pnlDifference = (trade.pnl || 0) - (originalTrade.pnl || 0);
 
+                if (accountsDoc.exists()) {
+                    const accounts = accountsDoc.data().accounts || [];
+                    const accountIndex = accounts.findIndex((acc: any) => acc.id === trade.accountId);
+
+                    if (accountIndex !== -1) {
+                        const updatedAccounts = [...accounts];
+                        const currentBalance = updatedAccounts[accountIndex].currentBalance ?? updatedAccounts[accountIndex].initialBalance;
+                        updatedAccounts[accountIndex].currentBalance = currentBalance + pnlDifference;
+                        // WRITE to accounts
+                        transaction.update(accountsDocRef, { accounts: updatedAccounts });
+                    } else {
+                         console.warn(`Account with ID ${trade.accountId} not found. Skipping balance update.`);
+                    }
+                } else {
+                     console.warn("Accounts document not found for user. Skipping balance update.");
+                }
+                
+                // WRITE to trade
                 const { id, ...tradeData } = trade;
                 transaction.update(tradeRef, {
                     ...tradeData,
                     date: Timestamp.fromDate(trade.date),
                 });
-                
-                const accountsDoc = await transaction.get(accountsDocRef);
-                if (!accountsDoc.exists()) {
-                     console.warn("Accounts document not found for user. Skipping balance update.");
-                     return;
-                }
-                const accounts = accountsDoc.data().accounts || [];
-                const accountIndex = accounts.findIndex((acc: any) => acc.id === trade.accountId);
-
-                if (accountIndex === -1) {
-                    console.warn(`Account with ID ${trade.accountId} not found. Skipping balance update.`);
-                    return;
-                };
-
-
-                const updatedAccounts = [...accounts];
-                const currentBalance = updatedAccounts[accountIndex].currentBalance ?? updatedAccounts[accountIndex].initialBalance;
-                updatedAccounts[accountIndex].currentBalance = currentBalance + pnlDifference;
-                
-                transaction.update(accountsDocRef, { accounts: updatedAccounts });
             });
 
             triggerRefresh();
@@ -184,33 +192,37 @@ export function TradesProvider({ children }: { children: ReactNode }) {
             const tradeRef = doc(tradesCollection, id);
 
              await runTransaction(db, async (transaction) => {
+                // READS FIRST
                 const tradeDoc = await transaction.get(tradeRef);
+                const accountsDoc = await transaction.get(accountsDocRef);
+
                 if (!tradeDoc.exists()) {
                     throw new Error("Trade to delete not found.");
                 }
+
+                // PREPARE WRITES
                 const tradeToDelete = tradeDoc.data() as Trade;
                 const pnlToRemove = tradeToDelete.pnl || 0;
 
-                transaction.delete(tradeRef);
-                
-                const accountsDoc = await transaction.get(accountsDocRef);
-                if (!accountsDoc.exists()) {
+                if (accountsDoc.exists()) {
+                    const accounts = accountsDoc.data().accounts || [];
+                    const accountIndex = accounts.findIndex((acc: any) => acc.id === tradeToDelete.accountId);
+                    
+                    if (accountIndex !== -1) {
+                        const updatedAccounts = [...accounts];
+                        const currentBalance = updatedAccounts[accountIndex].currentBalance ?? updatedAccounts[accountIndex].initialBalance;
+                        updatedAccounts[accountIndex].currentBalance = currentBalance - pnlToRemove;
+                        // WRITE to accounts
+                        transaction.update(accountsDocRef, { accounts: updatedAccounts });
+                    } else {
+                         console.warn(`Account with ID ${tradeToDelete.accountId} not found. Skipping balance update.`);
+                    }
+                } else {
                      console.warn("Accounts document not found for user. Skipping balance update.");
-                     return;
                 }
-                const accounts = accountsDoc.data().accounts || [];
-                const accountIndex = accounts.findIndex((acc: any) => acc.id === tradeToDelete.accountId);
                 
-                if (accountIndex === -1) {
-                    console.warn(`Account with ID ${tradeToDelete.accountId} not found. Skipping balance update.`);
-                    return;
-                };
-                
-                const updatedAccounts = [...accounts];
-                const currentBalance = updatedAccounts[accountIndex].currentBalance ?? updatedAccounts[accountIndex].initialBalance;
-                updatedAccounts[accountIndex].currentBalance = currentBalance - pnlToRemove;
-                
-                transaction.update(accountsDocRef, { accounts: updatedAccounts });
+                // WRITE to trade (delete)
+                transaction.delete(tradeRef);
              });
 
             triggerRefresh();
