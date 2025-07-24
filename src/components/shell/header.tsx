@@ -45,9 +45,6 @@ export const Header = React.memo(function Header() {
                     <div className='w-[1px] h-6 bg-border hidden sm:block'/>
                     <div className="flex items-center gap-2">
                         <AccountSwitcher />
-                        <Button onClick={() => triggerRefresh()} variant="ghost" size="icon" disabled={isTradesLoading} aria-label="Refresh data">
-                            <RefreshCw className={cn("h-4 w-4", isTradesLoading && "animate-spin")} />
-                        </Button>
                         <Button onClick={() => openForm()} size={isMobile ? "icon" : "default"}>
                             <PlusCircle className={cn(!isMobile && "mr-2", "h-4 w-4")} />
                             <span className="hidden md:inline">Add Trade</span>
