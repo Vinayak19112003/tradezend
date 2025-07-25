@@ -59,13 +59,13 @@ export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisP
                     period = 'PM';
                 }
                 return {
-                    hour: `${displayHour}:00`,
-                    hourFull: `${displayHour} ${period}`,
+                    hour,
+                    label: `${displayHour} ${period}`,
                     netR: parseFloat(data.netR.toFixed(2)),
                     winRate: parseFloat(winRate.toFixed(1)),
                     trades: data.trades,
                 };
-            }).sort((a, b) => parseInt(a.hour.split(':')[0]) - parseInt(b.hour.split(':')[0]));
+            }).sort((a, b) => a.hour - b.hour);
             
         return { chartData };
     }, [trades]);
@@ -81,7 +81,7 @@ export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisP
             return (
                 <div className="rounded-lg border bg-background p-2 shadow-sm text-sm">
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                        <div className="col-span-2 font-bold mb-1">Time: {data.hourFull}</div>
+                        <div className="col-span-2 font-bold mb-1">Time: {label}</div>
                         <div className="text-muted-foreground">Net R</div>
                         <div className="font-semibold text-right">{data.netR.toFixed(2)}R</div>
                         <div className="text-muted-foreground">Win Rate</div>
@@ -132,7 +132,15 @@ export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisP
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                            <XAxis dataKey="hour" stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} />
+                            <XAxis 
+                                dataKey="label" 
+                                stroke={tickColor} 
+                                fontSize={12} 
+                                tickLine={false} 
+                                axisLine={false} 
+                                interval="preserveStartEnd"
+                                tickFormatter={(value, index) => (index % 2 === 0 ? value : '')}
+                            />
                             <YAxis stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} label={{ value: 'Net R', angle: -90, position: 'insideLeft', fill: tickColor, fontSize: 12, dy: 40 }}/>
                             <Tooltip
                                 cursor={{ fill: 'hsla(var(--accent) / 0.2)' }}
