@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -13,7 +12,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!isLoading) {
       if (user) {
-        router.replace('/?tab=dashboard');
+        router.replace('/dashboard');
       } else {
         router.replace('/login');
       }
