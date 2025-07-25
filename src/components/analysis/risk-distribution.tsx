@@ -7,12 +7,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useTheme } from 'next-themes';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CircleDot } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-type TimeAnalysisProps = {
+type RiskDistributionProps = {
   trades: Trade[];
 };
 
-export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisProps) {
+const RISK_BINS = {
+    Low: { max: 1, name: 'Low (≤1%)' },
+    Medium: { max: 2.5, name: 'Medium (1-2.5%)' },
+    High: { max: Infinity, name: 'High (>2.5%)' },
+};
+
+export const RiskDistribution = memo(function RiskDistribution({ trades }: RiskDistributionProps) {
     const { theme } = useTheme();
     const [mounted, setMounted] = useState(false);
     
@@ -20,54 +28,41 @@ export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisP
         setMounted(true);
     }, []);
 
-    const hourlyStats = useMemo(() => {
-        const stats: { [hour: number]: { trades: number; wins: number; losses: number; netR: number } } = {};
-
-        for (let i = 0; i < 24; i++) {
-            stats[i] = { trades: 0, wins: 0, losses: 0, netR: 0 };
-        }
+    const riskStats = useMemo(() => {
+        const stats: { [key: string]: { trades: number, netR: number, name: string } } = {
+            Low: { trades: 0, netR: 0, name: RISK_BINS.Low.name },
+            Medium: { trades: 0, netR: 0, name: RISK_BINS.Medium.name },
+            High: { trades: 0, netR: 0, name: RISK_BINS.High.name },
+        };
 
         trades.forEach(trade => {
-            if (!trade.entryTime) return;
-            const hour = parseInt(trade.entryTime.split(':')[0], 10);
-            if (isNaN(hour)) return;
-            
-            stats[hour].trades++;
-            let rValue = 0;
-            if (trade.result === 'Win') {
-                stats[hour].wins++;
-                rValue = trade.rr || 0;
-            } else if (trade.result === 'Loss') {
-                stats[hour].losses++;
-                rValue = -1;
-            }
-            stats[hour].netR += rValue;
-        });
-
-        const chartData = Object.entries(stats)
-            .map(([hourStr, data]) => {
-                const hour = parseInt(hourStr, 10);
-                const winRate = data.wins + data.losses > 0 ? (data.wins / (data.wins + data.losses)) * 100 : 0;
-                let period = 'AM';
-                let displayHour = hour;
-                if (hour === 0) {
-                    displayHour = 12;
-                } else if (hour === 12) {
-                    period = 'PM';
-                } else if (hour > 12) {
-                    displayHour = hour - 12;
-                    period = 'PM';
+            const riskPercent = trade.riskPercentage;
+            if (riskPercent != null && riskPercent > 0) {
+                
+                let binKey: keyof typeof RISK_BINS | null = null;
+                if (riskPercent <= RISK_BINS.Low.max) {
+                    binKey = 'Low';
+                } else if (riskPercent <= RISK_BINS.Medium.max) {
+                    binKey = 'Medium';
+                } else {
+                    binKey = 'High';
                 }
-                return {
-                    hour: `${displayHour}:00`,
-                    hourFull: `${displayHour} ${period}`,
-                    netR: parseFloat(data.netR.toFixed(2)),
-                    winRate: parseFloat(winRate.toFixed(1)),
-                    trades: data.trades,
-                };
-            }).sort((a, b) => parseInt(a.hour.split(':')[0]) - parseInt(b.hour.split(':')[0]));
-            
-        return { chartData };
+
+                if (binKey) {
+                    stats[binKey].trades++;
+                    let rValue = 0;
+                    if (trade.result === 'Win') {
+                        rValue = trade.rr || 0;
+                    } else if (trade.result === 'Loss') {
+                        rValue = -1;
+                    }
+                    stats[binKey].netR += rValue;
+                }
+            }
+        });
+        
+        return Object.values(stats).map(s => ({...s, netR: parseFloat(s.netR.toFixed(2))}));
+
     }, [trades]);
 
     const tickColor = theme === 'dark' ? '#888888' : '#333333';
@@ -81,11 +76,9 @@ export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisP
             return (
                 <div className="rounded-lg border bg-background p-2 shadow-sm text-sm">
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                        <div className="col-span-2 font-bold mb-1">Time: {data.hourFull}</div>
+                        <div className="col-span-2 font-bold mb-1">{label}</div>
                         <div className="text-muted-foreground">Net R</div>
-                        <div className="font-semibold text-right">{data.netR.toFixed(2)}R</div>
-                        <div className="text-muted-foreground">Win Rate</div>
-                        <div className="font-semibold text-right">{data.winRate.toFixed(1)}%</div>
+                        <div className={cn("font-semibold text-right", data.netR > 0 ? "text-success" : "text-destructive")}>{data.netR.toFixed(2)}R</div>
                         <div className="text-muted-foreground">Trades</div>
                         <div className="font-semibold text-right">{data.trades}</div>
                     </div>
@@ -102,8 +95,8 @@ export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisP
                     <Skeleton className="h-6 w-48" />
                     <Skeleton className="h-4 w-64" />
                 </CardHeader>
-                <CardContent>
-                    <Skeleton className="h-[300px] w-full" />
+                <CardContent className="h-[300px]">
+                    <Skeleton className="h-full w-full" />
                 </CardContent>
             </Card>
         );
@@ -112,42 +105,45 @@ export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisP
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Performance by Time of Day</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                    <CircleDot className="h-5 w-5 text-primary" />
+                    Risk Distribution
+                </CardTitle>
                 <CardDescription>
-                    Analyze trade performance based on the hour of entry.
+                    Profitability (Net R) per risk percentage category.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="h-[340px]">
-                {hourlyStats.chartData.some(d => d.trades > 0) ? (
+            <CardContent className="h-[300px]">
+                {riskStats.some(d => d.trades > 0) ? (
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={hourlyStats.chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                        <BarChart data={riskStats} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                             <defs>
-                                <linearGradient id="successGradientTime" x1="0" y1="0" x2="0" y2="1">
+                                <linearGradient id="successGradientRisk" x1="0" y1="0" x2="0" y2="1">
                                   <stop offset="0%" stopColor={successColor} stopOpacity={0.8} />
                                   <stop offset="100%" stopColor={successColor} stopOpacity={0.2} />
                                 </linearGradient>
-                                <linearGradient id="destructiveGradientTime" x1="0" y1="0" x2="0" y2="1">
+                                <linearGradient id="destructiveGradientRisk" x1="0" y1="0" x2="0" y2="1">
                                   <stop offset="0%" stopColor={destructiveColor} stopOpacity={0.8} />
                                   <stop offset="100%" stopColor={destructiveColor} stopOpacity={0.2} />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                            <XAxis dataKey="hour" stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} />
+                            <XAxis dataKey="name" stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} label={{ value: 'Net R', angle: -90, position: 'insideLeft', fill: tickColor, fontSize: 12, dy: 40 }}/>
                             <Tooltip
                                 cursor={{ fill: 'hsla(var(--accent) / 0.2)' }}
                                 content={<CustomTooltip />}
                             />
-                            <Bar dataKey="netR" maxBarSize={60}>
-                                {hourlyStats.chartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.netR >= 0 ? "url(#successGradientTime)" : "url(#destructiveGradientTime)"} />
+                            <Bar dataKey="netR" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                                {riskStats.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.netR >= 0 ? "url(#successGradientRisk)" : "url(#destructiveGradientRisk)"} />
                                 ))}
                             </Bar>
                         </BarChart>
                     </ResponsiveContainer>
                 ) : (
                     <div className="h-full flex items-center justify-center text-muted-foreground p-4 text-center">
-                        Not enough trade data with entry times to analyze hourly performance.
+                        Not enough trade data with account size and risk % to analyze risk distribution.
                     </div>
                 )}
             </CardContent>

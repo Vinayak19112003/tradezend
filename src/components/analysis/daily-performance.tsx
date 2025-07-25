@@ -86,6 +86,16 @@ export const DailyPerformance = memo(function DailyPerformance({ trades }: Daily
                 ) : hasData ? (
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={dailyStats} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                             <defs>
+                                <linearGradient id="successGradientDaily" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={successColor} stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor={successColor} stopOpacity={0.2} />
+                                </linearGradient>
+                                <linearGradient id="destructiveGradientDaily" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={destructiveColor} stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor={destructiveColor} stopOpacity={0.2} />
+                                </linearGradient>
+                            </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                             <XAxis dataKey="name" stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis
@@ -104,9 +114,9 @@ export const DailyPerformance = memo(function DailyPerformance({ trades }: Daily
                                 cursor={{ fill: 'hsla(var(--accent) / 0.2)' }}
                                 content={<CustomTooltip />}
                             />
-                            <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                            <Bar dataKey="pnl" radius={[4, 4, 0, 0]} maxBarSize={60}>
                                 {dailyStats.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? successColor : destructiveColor} />
+                                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? "url(#successGradientDaily)" : "url(#destructiveGradientDaily)"} />
                                 ))}
                             </Bar>
                         </BarChart>
