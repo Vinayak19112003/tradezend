@@ -35,13 +35,13 @@
   }
 
   .dark {
-    --background: 224 20% 12%;
+    --background: 224 20% 12%; /* Dark gray-blue */
     --foreground: 210 40% 98%;
-    --card: 224 20% 16%;
+    --card: 224 20% 16%; /* Slightly lighter dark gray-blue */
     --card-foreground: 210 40% 98%;
     --popover: 224 20% 12%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 90% 60%;
+    --primary: 260 85% 65%; /* Saturated purple from image */
     --primary-foreground: 210 40% 9.8%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -55,8 +55,8 @@
     --success-foreground: 0 0% 100%;
     --border: 224 20% 24%;
     --input: 224 20% 24%;
-    --ring: 210 90% 60%;
-    --chart-1: 210 90% 60%;
+    --ring: 260 85% 65%;
+    --chart-1: 260 85% 65%;
     --chart-2: 22 90% 60%;
   }
 }
