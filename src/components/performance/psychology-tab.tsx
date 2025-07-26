@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Trade } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PatternAnalysis } from '@/components/analysis/pattern-analysis';
 
 // Dynamically import charting components
 const MistakeAnalysis = dynamic(() => import('@/components/analysis/mistake-analysis').then(mod => mod.MistakeAnalysis), { ssr: false, loading: () => <Skeleton className="h-[180px]" /> });
@@ -22,15 +21,6 @@ export default function PsychologyTab({ trades, tradingRules }: { trades: Trade[
                     </CardHeader>
                     <CardContent>
                         <MistakeAnalysis trades={trades} />
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>AI Pattern Analysis</CardTitle>
-                        <CardDescription>Psychological insights from your journal notes.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <PatternAnalysis trades={trades} />
                     </CardContent>
                 </Card>
             </div>
