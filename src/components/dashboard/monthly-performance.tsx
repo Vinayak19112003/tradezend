@@ -4,7 +4,7 @@
 import { useMemo, memo, useState, useEffect } from 'react';
 import type { Trade } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { format, parse } from 'date-fns';
 import { useTheme } from "next-themes";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -64,9 +64,9 @@ export const MonthlyPerformance = memo(function MonthlyPerformance({ trades }: M
     }, [trades]);
 
     const tickColor = theme === 'dark' ? '#888888' : '#333333';
-    const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
     const successColor = 'hsl(var(--success))';
     const destructiveColor = 'hsl(var(--destructive))';
+
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
@@ -99,7 +99,7 @@ export const MonthlyPerformance = memo(function MonthlyPerformance({ trades }: M
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Monthly Performance (PNL)</CardTitle>
+                <CardTitle>Monthly Performance Trend</CardTitle>
                 <CardDescription>A month-by-month summary of your trading profitability.</CardDescription>
             </CardHeader>
             <CardContent className="h-[400px]">
@@ -108,7 +108,16 @@ export const MonthlyPerformance = memo(function MonthlyPerformance({ trades }: M
                 ) : monthlyStats.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={monthlyStats} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                             <defs>
+                                <linearGradient id="successGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={successColor} stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor={successColor} stopOpacity={0.2} />
+                                </linearGradient>
+                                <linearGradient id="destructiveGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={destructiveColor} stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor={destructiveColor} stopOpacity={0.2} />
+                                </linearGradient>
+                            </defs>
                             <XAxis dataKey="name" stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis 
                               stroke={tickColor} 
@@ -128,7 +137,7 @@ export const MonthlyPerformance = memo(function MonthlyPerformance({ trades }: M
                             />
                             <Bar dataKey="pnl" radius={[4, 4, 0, 0]} maxBarSize={60}>
                                 {monthlyStats.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? successColor : destructiveColor} />
+                                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? "url(#successGradient)" : "url(#destructiveGradient)"} />
                                 ))}
                             </Bar>
                         </BarChart>

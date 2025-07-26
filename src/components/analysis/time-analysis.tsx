@@ -4,7 +4,7 @@
 import { useMemo, useState, useEffect, memo } from 'react';
 import type { Trade } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useTheme } from 'next-themes';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -71,7 +71,6 @@ export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisP
     }, [trades]);
 
     const tickColor = theme === 'dark' ? '#888888' : '#333333';
-    const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
     const successColor = 'hsl(var(--success))';
     const destructiveColor = 'hsl(var(--destructive))';
 
@@ -131,7 +130,6 @@ export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisP
                                   <stop offset="100%" stopColor={destructiveColor} stopOpacity={0.2} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                             <XAxis 
                                 dataKey="label" 
                                 stroke={tickColor} 

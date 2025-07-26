@@ -4,7 +4,7 @@
 import { useMemo, memo, useState, useEffect } from 'react';
 import type { Trade } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useTheme } from "next-themes";
 import { Skeleton } from '@/components/ui/skeleton';
 import { StreamerModeText } from '@/components/streamer-mode-text';
@@ -49,7 +49,6 @@ export default memo(function SessionAnalysis({ trades }: SessionAnalysisProps) {
     const hasData = useMemo(() => sessionStats.some(d => d.trades > 0), [sessionStats]);
 
     const tickColor = theme === 'dark' ? '#888888' : '#333333';
-    const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
     const successColor = 'hsl(var(--success))';
     const destructiveColor = 'hsl(var(--destructive))';
 
@@ -97,7 +96,6 @@ export default memo(function SessionAnalysis({ trades }: SessionAnalysisProps) {
                                   <stop offset="100%" stopColor={destructiveColor} stopOpacity={0.2} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                             <XAxis dataKey="name" stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis
                               stroke={tickColor}

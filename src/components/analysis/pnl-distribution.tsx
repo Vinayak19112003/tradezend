@@ -4,10 +4,9 @@
 import { useMemo, memo, useState, useEffect } from 'react';
 import type { Trade } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, ReferenceLine } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LabelList, ReferenceLine, Tooltip } from 'recharts';
 import { useTheme } from "next-themes";
 import { Skeleton } from '@/components/ui/skeleton';
-import { StreamerModeText } from '@/components/streamer-mode-text';
 
 type PnlDistributionProps = {
     trades: Trade[];
@@ -58,7 +57,6 @@ export default memo(function PnlDistribution({ trades }: PnlDistributionProps) {
     }, [trades]);
 
     const tickColor = theme === 'dark' ? '#888888' : '#333333';
-    const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
@@ -102,7 +100,6 @@ export default memo(function PnlDistribution({ trades }: PnlDistributionProps) {
                                   <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.8} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                              <XAxis type="number" stroke={tickColor} domain={yDomain} allowDataOverflow={true} tickFormatter={(tick) => Math.abs(tick).toString()} />
                             <YAxis type="category" dataKey="range" stroke={tickColor} width={80} />
                             <Tooltip
