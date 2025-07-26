@@ -3,17 +3,18 @@
 
 /**
  * @fileoverview This file defines the user Settings page.
- * It uses a two-column layout with a sidebar for navigating different
- * settings panels (General, Accounts, Tag Management).
+ * It provides a centralized hub for managing user profile information,
+ * application preferences, and security settings.
  */
 
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { ArrowLeft, Settings as SettingsIcon, Shield, Tag, Users } from 'lucide-react';
-import GeneralSettings from '@/components/settings/general-settings';
+import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import UserProfileCard from '@/components/settings/user-profile-card';
+import PreferencesCard from '@/components/settings/preferences-card';
+import SecurityCard from '@/components/settings/security-card';
 import { ManageAccountsCard } from '@/components/settings/manage-accounts-card';
+
 
 interface SettingsPageProps {
   trades: any[]; // Trades prop is not used here but required by the main layout
@@ -21,15 +22,9 @@ interface SettingsPageProps {
 
 export default function SettingsPage({ trades }: SettingsPageProps) {
     const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-
+    
     const handleBack = () => {
-        const current = new URLSearchParams(Array.from(searchParams.entries()));
-        current.set("tab", 'dashboard');
-        const search = current.toString();
-        const query = search ? `?${search}` : "";
-        router.push(`${pathname}${query}`);
+        router.back();
     };
     
     return (
@@ -45,9 +40,11 @@ export default function SettingsPage({ trades }: SettingsPageProps) {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 <div className="lg:col-span-2 grid gap-6">
-                    <GeneralSettings />
+                    <PreferencesCard />
+                    <SecurityCard />
                 </div>
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1 grid gap-6">
+                    <UserProfileCard />
                     <ManageAccountsCard />
                 </div>
             </div>
