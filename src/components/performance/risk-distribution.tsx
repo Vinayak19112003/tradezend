@@ -117,6 +117,16 @@ export const RiskDistribution = memo(function RiskDistribution({ trades }: RiskD
                 {riskStats.some(d => d.trades > 0) ? (
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={riskStats} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                            <defs>
+                                <linearGradient id="successGradientRisk" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={successColor} stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor={successColor} stopOpacity={0.2} />
+                                </linearGradient>
+                                <linearGradient id="destructiveGradientRisk" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={destructiveColor} stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor={destructiveColor} stopOpacity={0.2} />
+                                </linearGradient>
+                            </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                             <XAxis dataKey="name" stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} label={{ value: 'Net R', angle: -90, position: 'insideLeft', fill: tickColor, fontSize: 12, dy: 40 }}/>
@@ -124,9 +134,9 @@ export const RiskDistribution = memo(function RiskDistribution({ trades }: RiskD
                                 cursor={{ fill: 'hsla(var(--accent) / 0.2)' }}
                                 content={<CustomTooltip />}
                             />
-                            <Bar dataKey="netR" radius={[4, 4, 0, 0]}>
+                            <Bar dataKey="netR" radius={[4, 4, 0, 0]} maxBarSize={60}>
                                 {riskStats.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.netR >= 0 ? successColor : destructiveColor} />
+                                    <Cell key={`cell-${index}`} fill={entry.netR >= 0 ? "url(#successGradientRisk)" : "url(#destructiveGradientRisk)"} />
                                 ))}
                             </Bar>
                         </BarChart>
