@@ -12,6 +12,14 @@ type RMultipleDistributionProps = {
     trades: Trade[];
 };
 
+const R_BINS = [
+    { name: "-1R", range: [-Infinity, 0] },
+    { name: "0-1R", range: [0, 1] },
+    { name: "1-2R", range: [1, 2] },
+    { name: "2-3R", range: [2, 3] },
+    { name: ">3R", range: [3, Infinity] },
+];
+
 export default memo(function RMultipleDistribution({ trades }: RMultipleDistributionProps) {
     const { theme } = useTheme();
     const [mounted, setMounted] = useState(false);
@@ -22,41 +30,26 @@ export default memo(function RMultipleDistribution({ trades }: RMultipleDistribu
 
     const rMultipleData = useMemo(() => {
         if (trades.length === 0) return [];
-        
-        const rMultiples = trades.map(t => t.result === 'Loss' ? -1 : (t.rr || 0));
-        
-        const maxR = Math.max(...rMultiples.filter(r => r > 0), 1);
-        const binSize = Math.ceil(maxR / 5) || 1; // Create up to 5 bins for wins
-        const bins: { [key: string]: { name: string, range: [number, number], wins: number, losses: number } } = {};
 
-        // Bin for losses
-        bins['-1R'] = { name: '-1R', range: [-1, -1], wins: 0, losses: 0 };
-        
-        // Bins for wins
-        for (let i = 0; i < maxR; i += binSize) {
-             const start = Math.floor(i);
-             const end = start + binSize;
-             const name = `${start}-${end}R`;
-             if (start === 0 && end === 0) continue;
-             bins[name] = { name, range: [start, end], wins: 0, losses: 0 };
-        }
-        
-        rMultiples.forEach(r => {
-             if (r < 0) {
-                if (bins['-1R']) bins['-1R'].losses++;
-             } else {
-                 const binKey = Object.keys(bins).find(k => {
-                     if (k === '-1R') return false;
-                     const bin = bins[k];
-                     return r >= bin.range[0] && r < bin.range[1];
-                 });
-                 if (binKey && bins[binKey]) {
-                     bins[binKey].wins++;
-                 }
-             }
+        const bins: { [key: string]: { name: string, wins: number, losses: number } } = R_BINS.reduce((acc, bin) => {
+            acc[bin.name] = { name: bin.name, wins: 0, losses: 0 };
+            return acc;
+        }, {} as { [key: string]: { name: string, wins: number, losses: number } });
+
+        trades.forEach(trade => {
+            if (trade.result === 'Loss') {
+                bins['-1R'].losses++;
+            } else if (trade.result === 'Win') {
+                const rValue = trade.rr || 0;
+                const bin = R_BINS.find(b => rValue >= b.range[0] && rValue < b.range[1]);
+                if (bin) {
+                    bins[bin.name].wins++;
+                }
+            }
         });
 
         return Object.values(bins).filter(b => b.wins > 0 || b.losses > 0);
+
     }, [trades]);
 
     const tickColor = theme === 'dark' ? '#888888' : '#333333';
@@ -77,6 +70,7 @@ export default memo(function RMultipleDistribution({ trades }: RMultipleDistribu
                             <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                             <XAxis dataKey="name" stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis
+                              allowDecimals={false}
                               stroke={tickColor}
                               fontSize={12}
                               tickLine={false}
