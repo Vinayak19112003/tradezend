@@ -105,7 +105,6 @@ export default function TagManagement() {
             <CardContent className="space-y-8">
                 <TagSection title="Assets" description="The financial instruments you trade." useHook={useAssets} noun="asset" />
                 <TagSection title="Strategies" description="Your unique trading strategies and setups." useHook={useStrategies} noun="strategy" />
-                <TagSection title="Mistake Tags" description="Common mistakes you want to track." useHook={useMistakeTags} noun="mistakeTag" />
             </CardContent>
         </Card>
     );
