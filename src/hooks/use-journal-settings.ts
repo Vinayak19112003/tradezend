@@ -4,13 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot, getDoc, Timestamp } from "firebase/firestore";
 import { useToast } from './use-toast';
-import { DEFAULT_ASSETS, DEFAULT_STRATEGIES, DEFAULT_MISTAKE_TAGS, DEFAULT_TRADING_RULES, DEFAULT_TRADING_MODEL, DEFAULT_ACCOUNTS } from '@/lib/constants';
+import { DEFAULT_ASSETS, DEFAULT_STRATEGIES, DEFAULT_MISTAKE_TAGS, DEFAULT_TRADING_RULES, DEFAULT_TRADING_MODEL, DEFAULT_ACCOUNTS, DEFAULT_GENERAL_SETTINGS } from '@/lib/constants';
 import { useAuth } from './use-auth';
 
 const SETTINGS_COLLECTION = 'settings';
 const SETTINGS_DOC_ID = 'userConfig';
 
-type SettingsKey = 'assets' | 'strategies' | 'mistakeTags' | 'tradingRules' | 'tradingModel' | 'accounts';
+type SettingsKey = 'assets' | 'strategies' | 'mistakeTags' | 'tradingRules' | 'tradingModel' | 'accounts' | 'generalSettings';
 
 
 const useJournalSettings = (key: SettingsKey, defaultValues: any) => {
@@ -41,7 +41,14 @@ const useJournalSettings = (key: SettingsKey, defaultValues: any) => {
             tradingRules: [...DEFAULT_TRADING_RULES],
             tradingModel: { ...DEFAULT_TRADING_MODEL },
             accounts: [...DEFAULT_ACCOUNTS],
+            generalSettings: { ...DEFAULT_GENERAL_SETTINGS },
           });
+        } else {
+            const data = docSnap.data();
+            // Check for individual missing settings and add them
+            if (!data.generalSettings) {
+                await updateDoc(docRef, { generalSettings: { ...DEFAULT_GENERAL_SETTINGS } });
+            }
         }
       } catch (error) {
         console.error("Failed to check or initialize settings doc:", error);
@@ -91,8 +98,10 @@ const useJournalSettings = (key: SettingsKey, defaultValues: any) => {
             }
           } else {
             // Field might not exist yet for an old user, so we set it
-            if (key === 'accounts' && !data.accounts) {
+             if (key === 'accounts' && !data.accounts) {
                 updateDoc(docRef, { accounts: [...DEFAULT_ACCOUNTS] });
+            } else if (key === 'generalSettings' && !data.generalSettings) {
+                 updateDoc(docRef, { generalSettings: { ...DEFAULT_GENERAL_SETTINGS } });
             }
             setItems(defaultValues);
           }

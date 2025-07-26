@@ -46,3 +46,10 @@ export const DEFAULT_TRADING_MODEL = {
 export const DEFAULT_ACCOUNTS = [
     { id: "default", name: "Default Account", initialBalance: 100000 },
 ];
+
+export const DEFAULT_GENERAL_SETTINGS = {
+    currency: 'usd',
+    defaultOrderDate: 'previous',
+    defaultSymbol: 'EURUSD',
+    defaultQty: 1,
+};
