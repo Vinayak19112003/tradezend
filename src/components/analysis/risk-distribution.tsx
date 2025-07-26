@@ -4,7 +4,7 @@
 import { useMemo, useState, useEffect, memo } from 'react';
 import type { Trade } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useTheme } from 'next-themes';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CircleDot } from 'lucide-react';
@@ -66,9 +66,6 @@ export const RiskDistribution = memo(function RiskDistribution({ trades }: RiskD
     }, [trades]);
 
     const tickColor = theme === 'dark' ? '#888888' : '#333333';
-    const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-    const successColor = 'hsl(var(--success))';
-    const destructiveColor = 'hsl(var(--destructive))';
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
@@ -118,16 +115,15 @@ export const RiskDistribution = memo(function RiskDistribution({ trades }: RiskD
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={riskStats} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                             <defs>
-                                <linearGradient id="successGradientRisk" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor={successColor} stopOpacity={0.8} />
-                                  <stop offset="100%" stopColor={successColor} stopOpacity={0.2} />
+                                <linearGradient id="successGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.2} />
                                 </linearGradient>
-                                <linearGradient id="destructiveGradientRisk" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor={destructiveColor} stopOpacity={0.8} />
-                                  <stop offset="100%" stopColor={destructiveColor} stopOpacity={0.2} />
+                                <linearGradient id="destructiveGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.2} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                             <XAxis dataKey="name" stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} label={{ value: 'Net R', angle: -90, position: 'insideLeft', fill: tickColor, fontSize: 12, dy: 40 }}/>
                             <Tooltip
@@ -136,7 +132,7 @@ export const RiskDistribution = memo(function RiskDistribution({ trades }: RiskD
                             />
                             <Bar dataKey="netR" radius={[4, 4, 0, 0]} maxBarSize={60}>
                                 {riskStats.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.netR >= 0 ? "url(#successGradientRisk)" : "url(#destructiveGradientRisk)"} />
+                                    <Cell key={`cell-${index}`} fill={entry.netR >= 0 ? "url(#successGradient)" : "url(#destructiveGradient)"} />
                                 ))}
                             </Bar>
                         </BarChart>

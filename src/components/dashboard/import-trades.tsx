@@ -1,171 +1,91 @@
-
 "use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogTrigger,
-  DialogClose,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2, Upload, Wand2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { importTrades } from '@/ai/flows/import-trades-flow';
-import type { Trade } from '@/lib/types';
-import { db } from '@/lib/firebase';
-import { useAuth } from '@/hooks/use-auth';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { useMemo } from 'react';
+import { type Trade } from '@/lib/types';
+import { isThisMonth } from 'date-fns';
+import { TrendingUp, AlertTriangle, Target } from 'lucide-react';
+import { StreamerModeText } from '@/components/streamer-mode-text';
+import { useTargets } from '@/hooks/use-targets';
+import { Progress } from '@/components/ui/progress';
+import { SetTargetsDialog } from '@/components/settings/set-targets-dialog';
 
-type ImportTradesProps = {
-  onImport: (addedCount: number, skippedCount: number) => void;
-  addMultipleTrades: (newTrades: Omit<Trade, 'id'>[]) => Promise<{success: boolean, addedCount: number}>;
+type SummaryBannerProps = {
+  trades: Trade[];
 };
 
-export default function ImportTrades({ onImport, addMultipleTrades }: ImportTradesProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const { toast } = useToast();
-  const { user } = useAuth();
+export function SummaryBanner({ trades }: SummaryBannerProps) {
+  const { targets } = useTargets();
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      setFile(event.target.files[0]);
+  const monthStats = useMemo(() => {
+    const thisMonthsTrades = trades.filter(trade => isThisMonth(new Date(trade.date)));
+    if (thisMonthsTrades.length === 0) {
+      return { pnl: 0, topMistake: null };
     }
-  };
 
-  const handleImport = async () => {
-    if (!file || !user) {
-      toast({
-        variant: "destructive",
-        title: "Import Failed",
-        description: "Please select a file and ensure you are logged in.",
+    const pnl = thisMonthsTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+    const mistakeCounts: { [key: string]: number } = {};
+    thisMonthsTrades.forEach(trade => {
+      trade.mistakes?.forEach(mistake => {
+        mistakeCounts[mistake] = (mistakeCounts[mistake] || 0) + 1;
       });
-      return;
-    }
+    });
+    
+    const topMistake = Object.entries(mistakeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
 
-    setIsImporting(true);
+    return { pnl, topMistake };
+  }, [trades]);
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        const fileDataUri = e.target?.result as string;
-
-        if (!fileDataUri) {
-            toast({
-                variant: 'destructive',
-                title: 'File Error',
-                description: 'Could not read the contents of the file.',
-            });
-            setIsImporting(false);
-            return;
-        }
-
-        try {
-            const result = await importTrades({ fileDataUri });
-            const tradesFromAI = result.trades;
-
-            if (!tradesFromAI || tradesFromAI.length === 0) {
-                toast({
-                    variant: 'destructive',
-                    title: 'AI Parsing Failed',
-                    description: 'The AI could not extract any trades from your file.',
-                });
-                setIsImporting(false);
-                return;
-            }
-
-            // Deduplication logic against Firestore
-            const newTicketIds = tradesFromAI.map(t => t.ticket).filter(Boolean);
-            let existingTicketIds = new Set<string>();
-
-            if (newTicketIds.length > 0) {
-                const tradesCollection = collection(db, 'users', user.uid, 'trades');
-                const q = query(tradesCollection, where('ticket', 'in', newTicketIds));
-                const querySnapshot = await getDocs(q);
-                querySnapshot.forEach(doc => {
-                    existingTicketIds.add(doc.data().ticket);
-                });
-            }
-            
-            const newTrades = tradesFromAI.filter(trade => !trade.ticket || !existingTicketIds.has(trade.ticket));
-            const skippedCount = tradesFromAI.length - newTrades.length;
-
-            if (newTrades.length > 0) {
-                const { success, addedCount } = await addMultipleTrades(newTrades);
-                if (success) {
-                    onImport(addedCount, skippedCount);
-                }
-            } else {
-                onImport(0, skippedCount);
-            }
-            
-            setIsOpen(false);
-            setFile(null);
-        } catch (error) {
-            console.error("AI import failed:", error);
-            toast({
-                variant: "destructive",
-                title: "AI Import Error",
-                description: "An error occurred while the AI was processing your file. Please try again.",
-            });
-        } finally {
-            setIsImporting(false);
-        }
-    };
-
-    reader.onerror = () => {
-        toast({
-            variant: 'destructive',
-            title: 'File Read Error',
-            description: 'There was an error reading the selected file.',
-        });
-        setIsImporting(false);
-    };
-
-    reader.readAsDataURL(file);
-  };
+  const pnlProgress = targets.profit > 0 ? (monthStats.pnl / targets.profit) * 100 : 0;
+  const lossProgress = targets.loss > 0 ? (Math.abs(monthStats.pnl < 0 ? monthStats.pnl : 0) / targets.loss) * 100 : 0;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Upload className="mr-2 h-4 w-4" />
-          Import
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className='flex items-center gap-2'>
-            <Wand2 className='h-5 w-5 text-primary' />
-            AI-Powered Trade Import
-            </DialogTitle>
-          <DialogDescription>
-            Upload a CSV, PDF, or image file and our AI will automatically parse your trades. It will skip duplicates based on Ticket/Order ID.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
-            <Label htmlFor="import-file">Import File</Label>
-            <Input id="import-file" type="file" accept=".csv,.png,.jpg,.jpeg,.pdf" onChange={handleFileChange} />
-        </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-          <Button onClick={handleImport} disabled={isImporting || !file}>
-            {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-            {isImporting ? "AI is Analyzing..." : "Import with AI"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 rounded-lg border bg-card text-card-foreground p-3 shadow-sm">
+      <div className="flex flex-col justify-between gap-2">
+          <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success/10">
+                  <TrendingUp className="h-5 w-5 text-success" />
+              </div>
+              <div>
+                  <p className="text-xs text-muted-foreground">Monthly Profit Target</p>
+                  <StreamerModeText as="p" className="text-base font-bold font-headline text-success">
+                      {`$${monthStats.pnl.toFixed(2)} / $${targets.profit.toFixed(2)}`}
+                  </StreamerModeText>
+              </div>
+          </div>
+          <Progress value={pnlProgress} indicatorClassName="bg-success" />
+      </div>
+
+      <div className="flex flex-col justify-between gap-2">
+          <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                  <p className="text-xs text-muted-foreground">Max Loss Limit</p>
+                   <StreamerModeText as="p" className="text-base font-bold font-headline text-destructive">
+                      {`$${Math.abs(monthStats.pnl < 0 ? monthStats.pnl : 0).toFixed(2)} / $${targets.loss.toFixed(2)}`}
+                  </StreamerModeText>
+              </div>
+          </div>
+          <Progress value={lossProgress} indicatorClassName="bg-destructive"/>
+      </div>
+
+      <div className="flex flex-col justify-between gap-2">
+          <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Target className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                  <p className="text-xs text-muted-foreground">This Month's Top Mistake</p>
+                  <p className="text-base font-semibold truncate">{monthStats.topMistake || 'None'}</p>
+              </div>
+          </div>
+          <SetTargetsDialog>
+             <button className="w-full text-center text-xs text-primary underline-offset-4 hover:underline">
+                Set Targets
+             </button>
+          </SetTargetsDialog>
+      </div>
+    </div>
   );
 }
-
-    

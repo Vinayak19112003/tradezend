@@ -17,14 +17,10 @@ import { Input } from "@/components/ui/input";
 import { PlusCircle, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useStrategies } from "@/hooks/use-strategies";
 
-type AddStrategyDialogProps = {
-  strategies: string[];
-  addStrategy: (newStrategy: string) => Promise<boolean>;
-  deleteStrategy: (strategy: string) => Promise<void>;
-};
-
-export function AddStrategyDialog({ strategies, addStrategy, deleteStrategy }: AddStrategyDialogProps) {
+export function AddStrategyDialog() {
+  const { strategies, addStrategy, deleteStrategy, isLoaded } = useStrategies();
   const [open, setOpen] = useState(false);
   const [newStrategy, setNewStrategy] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -73,7 +69,7 @@ export function AddStrategyDialog({ strategies, addStrategy, deleteStrategy }: A
         <div className="grid gap-4 py-4">
             <h4 className="font-medium text-sm">Existing Strategies</h4>
             <ScrollArea className="h-40 w-full rounded-md border p-2">
-                {strategies.length > 0 ? (
+                {isLoaded && strategies.length > 0 ? (
                     strategies.map(strategy => (
                         <div key={strategy} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
                             <span className="text-sm font-medium">{strategy}</span>

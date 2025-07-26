@@ -1,94 +1,91 @@
 "use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import type { Trade } from '@/lib/types';
-import { Loader2, Wand2 } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { useMemo } from 'react';
+import { type Trade } from '@/lib/types';
+import { isThisMonth } from 'date-fns';
+import { TrendingUp, AlertTriangle, Target } from 'lucide-react';
+import { StreamerModeText } from '@/components/streamer-mode-text';
+import { useTargets } from '@/hooks/use-targets';
+import { Progress } from '@/components/ui/progress';
+import { SetTargetsDialog } from '@/components/settings/set-targets-dialog';
 
-export function PatternAnalysis({ trades }: { trades: Trade[] }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [analysis, setAnalysis] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+type SummaryBannerProps = {
+  trades: Trade[];
+};
 
-  const handleAnalyze = async () => {
-    setIsLoading(true);
-    setIsOpen(true);
-    
-    // Compile a comprehensive string of all psychological data
-    const tradeNotes = trades.map(t => {
-      let entry = `Trade Date: ${t.date.toLocaleDateString()}\nResult: ${t.result}, PNL: ${t.pnl?.toFixed(2) ?? 'N/A'}\n`;
-      if (t.preTradeEmotion) entry += `Pre-Trade Emotion: ${t.preTradeEmotion}\n`;
-      if (t.postTradeEmotion) entry += `Post-Trade Emotion: ${t.postTradeEmotion}\n`;
-      if (t.marketContext) entry += `Market Context: ${t.marketContext}\n`;
-      if (t.entryReason) entry += `Entry Reason: ${t.entryReason}\n`;
-      if (t.tradeFeelings) entry += `Feelings During Trade: ${t.tradeFeelings}\n`;
-      if (t.lossAnalysis) entry += `Loss Analysis: ${t.lossAnalysis}\n`;
-      if (t.notes) entry += `General Notes: ${t.notes}\n`;
-      return entry;
-    }).join('\n\n---\n\n');
-      
-    if (!tradeNotes.trim()) {
-      setAnalysis('You have no journal entries to analyze. Add some notes or psychological data to your trades to use this feature.');
-      setIsLoading(false);
-      return;
+export function SummaryBanner({ trades }: SummaryBannerProps) {
+  const { targets } = useTargets();
+
+  const monthStats = useMemo(() => {
+    const thisMonthsTrades = trades.filter(trade => isThisMonth(new Date(trade.date)));
+    if (thisMonthsTrades.length === 0) {
+      return { pnl: 0, topMistake: null };
     }
+
+    const pnl = thisMonthsTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+    const mistakeCounts: { [key: string]: number } = {};
+    thisMonthsTrades.forEach(trade => {
+      trade.mistakes?.forEach(mistake => {
+        mistakeCounts[mistake] = (mistakeCounts[mistake] || 0) + 1;
+      });
+    });
     
-    try {
-      const { patternDetection } = await import('@/ai/flows/pattern-detection');
-      const result = await patternDetection({ tradeNotes });
-      setAnalysis(result.patterns);
-    } catch (error) {
-      console.error("AI analysis failed:", error);
-      setAnalysis("An error occurred while analyzing your trades. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const topMistake = Object.entries(mistakeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+
+    return { pnl, topMistake };
+  }, [trades]);
+
+  const pnlProgress = targets.profit > 0 ? (monthStats.pnl / targets.profit) * 100 : 0;
+  const lossProgress = targets.loss > 0 ? (Math.abs(monthStats.pnl < 0 ? monthStats.pnl : 0) / targets.loss) * 100 : 0;
 
   return (
-    <>
-      <Button onClick={handleAnalyze} variant="outline" disabled={isLoading}>
-        {isLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-            <Wand2 className="mr-2 h-4 w-4" />
-        )}
-        AI Analysis
-      </Button>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md md:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-                <Wand2 className="h-5 w-5 text-primary"/>
-                Trade Pattern Analysis
-            </DialogTitle>
-            <DialogDescription>
-              AI-powered psychological and behavioral insights from your journal.
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="h-72 w-full rounded-md border p-4">
-              {isLoading ? (
-                  <div className="flex justify-center items-center h-full">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-              ) : (
-                <p className="text-sm whitespace-pre-wrap">{analysis}</p>
-              )}
-          </ScrollArea>
-          <DialogFooter>
-            <Button onClick={() => setIsOpen(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 rounded-lg border bg-card text-card-foreground p-3 shadow-sm">
+      <div className="flex flex-col justify-between gap-2">
+          <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success/10">
+                  <TrendingUp className="h-5 w-5 text-success" />
+              </div>
+              <div>
+                  <p className="text-xs text-muted-foreground">Monthly Profit Target</p>
+                  <StreamerModeText as="p" className="text-base font-bold font-headline text-success">
+                      {`$${monthStats.pnl.toFixed(2)} / $${targets.profit.toFixed(2)}`}
+                  </StreamerModeText>
+              </div>
+          </div>
+          <Progress value={pnlProgress} indicatorClassName="bg-success" />
+      </div>
+
+      <div className="flex flex-col justify-between gap-2">
+          <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                  <p className="text-xs text-muted-foreground">Max Loss Limit</p>
+                   <StreamerModeText as="p" className="text-base font-bold font-headline text-destructive">
+                      {`$${Math.abs(monthStats.pnl < 0 ? monthStats.pnl : 0).toFixed(2)} / $${targets.loss.toFixed(2)}`}
+                  </StreamerModeText>
+              </div>
+          </div>
+          <Progress value={lossProgress} indicatorClassName="bg-destructive"/>
+      </div>
+
+      <div className="flex flex-col justify-between gap-2">
+          <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Target className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                  <p className="text-xs text-muted-foreground">This Month's Top Mistake</p>
+                  <p className="text-base font-semibold truncate">{monthStats.topMistake || 'None'}</p>
+              </div>
+          </div>
+          <SetTargetsDialog>
+             <button className="w-full text-center text-xs text-primary underline-offset-4 hover:underline">
+                Set Targets
+             </button>
+          </SetTargetsDialog>
+      </div>
+    </div>
   );
 }

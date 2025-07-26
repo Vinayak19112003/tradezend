@@ -1,256 +1,159 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as MenubarPrimitive from "@radix-ui/react-menubar"
-import { Check, ChevronRight, Circle } from "lucide-react"
+import { useMemo, useState, useEffect, memo } from 'react';
+import type { Trade } from '@/lib/types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useTheme } from 'next-themes';
+import { Skeleton } from '@/components/ui/skeleton';
 
-import { cn } from "@/lib/utils"
+type TimeAnalysisProps = {
+  trades: Trade[];
+};
 
-function MenubarMenu({
-  ...props
-}: React.ComponentProps<typeof MenubarPrimitive.Menu>) {
-  return <MenubarPrimitive.Menu {...props} />
-}
+export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisProps) {
+    const { theme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+    
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
-function MenubarGroup({
-  ...props
-}: React.ComponentProps<typeof MenubarPrimitive.Group>) {
-  return <MenubarPrimitive.Group {...props} />
-}
+    const hourlyStats = useMemo(() => {
+        const stats: { [hour: number]: { trades: number; wins: number; losses: number; netR: number } } = {};
 
-function MenubarPortal({
-  ...props
-}: React.ComponentProps<typeof MenubarPrimitive.Portal>) {
-  return <MenubarPrimitive.Portal {...props} />
-}
+        for (let i = 0; i < 24; i++) {
+            stats[i] = { trades: 0, wins: 0, losses: 0, netR: 0 };
+        }
 
-function MenubarRadioGroup({
-  ...props
-}: React.ComponentProps<typeof MenubarPrimitive.RadioGroup>) {
-  return <MenubarPrimitive.RadioGroup {...props} />
-}
+        trades.forEach(trade => {
+            if (!trade.entryTime) return;
+            const hour = parseInt(trade.entryTime.split(':')[0], 10);
+            if (isNaN(hour)) return;
+            
+            stats[hour].trades++;
+            let rValue = 0;
+            if (trade.result === 'Win') {
+                stats[hour].wins++;
+                rValue = trade.rr || 0;
+            } else if (trade.result === 'Loss') {
+                stats[hour].losses++;
+                rValue = -1;
+            }
+            stats[hour].netR += rValue;
+        });
 
-function MenubarSub({
-  ...props
-}: React.ComponentProps<typeof MenubarPrimitive.Sub>) {
-  return <MenubarPrimitive.Sub data-slot="menubar-sub" {...props} />
-}
+        const chartData = Object.entries(stats)
+            .map(([hourStr, data]) => {
+                const hour = parseInt(hourStr, 10);
+                const winRate = data.wins + data.losses > 0 ? (data.wins / (data.wins + data.losses)) * 100 : 0;
+                let period = 'AM';
+                let displayHour = hour;
+                if (hour === 0) {
+                    displayHour = 12;
+                } else if (hour === 12) {
+                    period = 'PM';
+                } else if (hour > 12) {
+                    displayHour = hour - 12;
+                    period = 'PM';
+                }
+                return {
+                    hour,
+                    label: `${displayHour} ${period}`,
+                    netR: parseFloat(data.netR.toFixed(2)),
+                    winRate: parseFloat(winRate.toFixed(1)),
+                    trades: data.trades,
+                };
+            }).sort((a, b) => a.hour - b.hour);
+            
+        return { chartData };
+    }, [trades]);
 
-const Menubar = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <MenubarPrimitive.Root
-    ref={ref}
-    className={cn(
-      "flex h-10 items-center space-x-1 rounded-md border bg-background p-1",
-      className
-    )}
-    {...props}
-  />
-))
-Menubar.displayName = MenubarPrimitive.Root.displayName
+    const tickColor = theme === 'dark' ? '#888888' : '#333333';
 
-const MenubarTrigger = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger>
->(({ className, ...props }, ref) => (
-  <MenubarPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      "flex cursor-default select-none items-center rounded-sm px-3 py-1.5 text-sm font-medium outline-none focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
-      className
-    )}
-    {...props}
-  />
-))
-MenubarTrigger.displayName = MenubarPrimitive.Trigger.displayName
-
-const MenubarSubTrigger = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.SubTrigger>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubTrigger> & {
-    inset?: boolean
-  }
->(({ className, inset, children, ...props }, ref) => (
-  <MenubarPrimitive.SubTrigger
-    ref={ref}
-    className={cn(
-      "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
-      inset && "pl-8",
-      className
-    )}
-    {...props}
-  >
-    {children}
-    <ChevronRight className="ml-auto h-4 w-4" />
-  </MenubarPrimitive.SubTrigger>
-))
-MenubarSubTrigger.displayName = MenubarPrimitive.SubTrigger.displayName
-
-const MenubarSubContent = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.SubContent>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubContent>
->(({ className, ...props }, ref) => (
-  <MenubarPrimitive.SubContent
-    ref={ref}
-    className={cn(
-      "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-      className
-    )}
-    {...props}
-  />
-))
-MenubarSubContent.displayName = MenubarPrimitive.SubContent.displayName
-
-const MenubarContent = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Content>
->(
-  (
-    { className, align = "start", alignOffset = -4, sideOffset = 8, ...props },
-    ref
-  ) => (
-    <MenubarPrimitive.Portal>
-      <MenubarPrimitive.Content
-        ref={ref}
-        align={align}
-        alignOffset={alignOffset}
-        sideOffset={sideOffset}
-        className={cn(
-          "z-50 min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-          className
-        )}
-        {...props}
-      />
-    </MenubarPrimitive.Portal>
-  )
-)
-MenubarContent.displayName = MenubarPrimitive.Content.displayName
-
-const MenubarItem = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Item> & {
-    inset?: boolean
-  }
->(({ className, inset, ...props }, ref) => (
-  <MenubarPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      inset && "pl-8",
-      className
-    )}
-    {...props}
-  />
-))
-MenubarItem.displayName = MenubarPrimitive.Item.displayName
-
-const MenubarCheckboxItem = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.CheckboxItem>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.CheckboxItem>
->(({ className, children, checked, ...props }, ref) => (
-  <MenubarPrimitive.CheckboxItem
-    ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      className
-    )}
-    checked={checked}
-    {...props}
-  >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-      <MenubarPrimitive.ItemIndicator>
-        <Check className="h-4 w-4" />
-      </MenubarPrimitive.ItemIndicator>
-    </span>
-    {children}
-  </MenubarPrimitive.CheckboxItem>
-))
-MenubarCheckboxItem.displayName = MenubarPrimitive.CheckboxItem.displayName
-
-const MenubarRadioItem = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.RadioItem>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.RadioItem>
->(({ className, children, ...props }, ref) => (
-  <MenubarPrimitive.RadioItem
-    ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      className
-    )}
-    {...props}
-  >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-      <MenubarPrimitive.ItemIndicator>
-        <Circle className="h-2 w-2 fill-current" />
-      </MenubarPrimitive.ItemIndicator>
-    </span>
-    {children}
-  </MenubarPrimitive.RadioItem>
-))
-MenubarRadioItem.displayName = MenubarPrimitive.RadioItem.displayName
-
-const MenubarLabel = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.Label>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Label> & {
-    inset?: boolean
-  }
->(({ className, inset, ...props }, ref) => (
-  <MenubarPrimitive.Label
-    ref={ref}
-    className={cn(
-      "px-2 py-1.5 text-sm font-semibold",
-      inset && "pl-8",
-      className
-    )}
-    {...props}
-  />
-))
-MenubarLabel.displayName = MenubarPrimitive.Label.displayName
-
-const MenubarSeparator = React.forwardRef<
-  React.ElementRef<typeof MenubarPrimitive.Separator>,
-  React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Separator>
->(({ className, ...props }, ref) => (
-  <MenubarPrimitive.Separator
-    ref={ref}
-    className={cn("-mx-1 my-1 h-px bg-muted", className)}
-    {...props}
-  />
-))
-MenubarSeparator.displayName = MenubarPrimitive.Separator.displayName
-
-const MenubarShortcut = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLSpanElement>) => {
-  return (
-    <span
-      className={cn(
-        "ml-auto text-xs tracking-widest text-muted-foreground",
-        className
-      )}
-      {...props}
-    />
-  )
-}
-MenubarShortcut.displayname = "MenubarShortcut"
-
-export {
-  Menubar,
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  MenubarItem,
-  MenubarSeparator,
-  MenubarLabel,
-  MenubarCheckboxItem,
-  MenubarRadioGroup,
-  MenubarRadioItem,
-  MenubarPortal,
-  MenubarSubContent,
-  MenubarSubTrigger,
-  MenubarGroup,
-  MenubarSub,
-  MenubarShortcut,
-}
+    const CustomTooltip = ({ active, payload, label }: any) => {
+        if (active && payload && payload.length) {
+            const data = payload[0].payload;
+            return (
+                <div className="rounded-lg border bg-background p-2 shadow-sm text-sm">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="col-span-2 font-bold mb-1">Time: {label}</div>
+                        <div className="text-muted-foreground">Net R</div>
+                        <div className="font-semibold text-right">{data.netR.toFixed(2)}R</div>
+                        <div className="text-muted-foreground">Win Rate</div>
+                        <div className="font-semibold text-right">{data.winRate.toFixed(1)}%</div>
+                        <div className="text-muted-foreground">Trades</div>
+                        <div className="font-semibold text-right">{data.trades}</div>
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    };
+    
+    if (!mounted) {
+        return (
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-64" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-[300px] w-full" />
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Performance by Time of Day</CardTitle>
+                <CardDescription>
+                    Analyze trade performance based on the hour of entry.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="h-[340px]">
+                {hourlyStats.chartData.some(d => d.trades > 0) ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={hourlyStats.chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                            <defs>
+                                <linearGradient id="successGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.2} />
+                                </linearGradient>
+                                <linearGradient id="destructiveGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.2} />
+                                </linearGradient>
+                            </defs>
+                            <XAxis 
+                                dataKey="label" 
+                                stroke={tickColor} 
+                                fontSize={12} 
+                                tickLine={false} 
+                                axisLine={false} 
+                                interval="preserveStartEnd"
+                                tickFormatter={(value, index) => (index % 2 === 0 ? value : '')}
+                            />
+                            <YAxis stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} label={{ value: 'Net R', angle: -90, position: 'insideLeft', fill: tickColor, fontSize: 12, dy: 40 }}/>
+                            <Tooltip
+                                cursor={{ fill: 'hsla(var(--accent) / 0.2)' }}
+                                content={<CustomTooltip />}
+                            />
+                            <Bar dataKey="netR" maxBarSize={60}>
+                                {hourlyStats.chartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.netR >= 0 ? "url(#successGradient)" : "url(#destructiveGradient)"} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <div className="h-full flex items-center justify-center text-muted-foreground p-4 text-center">
+                        Not enough trade data with entry times to analyze hourly performance.
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+});

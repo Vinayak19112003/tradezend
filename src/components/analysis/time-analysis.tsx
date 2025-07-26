@@ -71,8 +71,6 @@ export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisP
     }, [trades]);
 
     const tickColor = theme === 'dark' ? '#888888' : '#333333';
-    const successColor = 'hsl(var(--success))';
-    const destructiveColor = 'hsl(var(--destructive))';
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
@@ -121,13 +119,13 @@ export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisP
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={hourlyStats.chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                             <defs>
-                                <linearGradient id="successGradientTime" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor={successColor} stopOpacity={0.8} />
-                                  <stop offset="100%" stopColor={successColor} stopOpacity={0.2} />
+                                <linearGradient id="successGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.2} />
                                 </linearGradient>
-                                <linearGradient id="destructiveGradientTime" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor={destructiveColor} stopOpacity={0.8} />
-                                  <stop offset="100%" stopColor={destructiveColor} stopOpacity={0.2} />
+                                <linearGradient id="destructiveGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.2} />
                                 </linearGradient>
                             </defs>
                             <XAxis 
@@ -146,7 +144,7 @@ export const TimeAnalysis = memo(function TimeAnalysis({ trades }: TimeAnalysisP
                             />
                             <Bar dataKey="netR" maxBarSize={60}>
                                 {hourlyStats.chartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.netR >= 0 ? "url(#successGradientTime)" : "url(#destructiveGradientTime)"} />
+                                    <Cell key={`cell-${index}`} fill={entry.netR >= 0 ? "url(#successGradient)" : "url(#destructiveGradient)"} />
                                 ))}
                             </Bar>
                         </BarChart>

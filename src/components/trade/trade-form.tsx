@@ -37,13 +37,13 @@ import { type Trade, TradeSchema, type TradingModel } from "@/lib/types";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMistakeTags } from "@/hooks/use-mistake-tags";
-import { AddMistakeTagDialog } from "./add-mistake-tag-dialog";
+import { AddMistakeTagDialog } from "@/components/dashboard/add-mistake-tag-dialog";
 import { useAssets } from "@/hooks/use-assets";
-import { AddAssetDialog } from "./add-asset-dialog";
+import { AddAssetDialog } from "@/components/dashboard/add-asset-dialog";
 import { useStrategies } from "@/hooks/use-strategies";
-import { AddStrategyDialog } from "./add-strategy-dialog";
+import { AddStrategyDialog } from "@/components/dashboard/add-strategy-dialog";
 import { useTradingRules } from "@/hooks/use-trading-rules";
-import { AddTradingRuleDialog } from "./add-trading-rule-dialog";
+import { AddTradingRuleDialog } from "@/components/dashboard/add-trading-rule-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { storage } from "@/lib/firebase";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -159,7 +159,7 @@ export function TradeForm({
           entryTimeFrame: trade.entryTimeFrame,
         }
       : {
-          accountId: selectedAccountId,
+          accountId: selectedAccountId || '',
           date: new Date(),
           asset: "",
           strategy: "",

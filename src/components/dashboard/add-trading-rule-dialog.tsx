@@ -17,14 +17,10 @@ import { Input } from "@/components/ui/input";
 import { PlusCircle, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTradingRules } from "@/hooks/use-trading-rules";
 
-type AddTradingRuleDialogProps = {
-  tradingRules: string[];
-  addTradingRule: (newRule: string) => Promise<boolean>;
-  deleteTradingRule: (rule: string) => Promise<void>;
-};
-
-export function AddTradingRuleDialog({ tradingRules, addTradingRule, deleteTradingRule }: AddTradingRuleDialogProps) {
+export function AddTradingRuleDialog() {
+  const { tradingRules, addTradingRule, deleteTradingRule, isLoaded } = useTradingRules();
   const [open, setOpen] = useState(false);
   const [newRule, setNewRule] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -73,7 +69,7 @@ export function AddTradingRuleDialog({ tradingRules, addTradingRule, deleteTradi
         <div className="grid gap-4 py-4">
             <h4 className="font-medium text-sm">Existing Rules</h4>
             <ScrollArea className="h-40 w-full rounded-md border p-2">
-                {tradingRules.length > 0 ? (
+                {isLoaded && tradingRules.length > 0 ? (
                     tradingRules.map(rule => (
                         <div key={rule} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
                             <span className="text-sm font-medium">{rule}</span>

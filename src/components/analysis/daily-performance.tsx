@@ -50,8 +50,6 @@ export const DailyPerformance = memo(function DailyPerformance({ trades }: Daily
     const hasData = useMemo(() => dailyStats.some(d => d.trades > 0), [dailyStats]);
 
     const tickColor = theme === 'dark' ? '#888888' : '#333333';
-    const successColor = 'hsl(var(--success))';
-    const destructiveColor = 'hsl(var(--destructive))';
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
@@ -86,13 +84,13 @@ export const DailyPerformance = memo(function DailyPerformance({ trades }: Daily
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={dailyStats} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                              <defs>
-                                <linearGradient id="successGradientDaily" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor={successColor} stopOpacity={0.8} />
-                                  <stop offset="100%" stopColor={successColor} stopOpacity={0.2} />
+                                <linearGradient id="successGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.2} />
                                 </linearGradient>
-                                <linearGradient id="destructiveGradientDaily" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor={destructiveColor} stopOpacity={0.8} />
-                                  <stop offset="100%" stopColor={destructiveColor} stopOpacity={0.2} />
+                                <linearGradient id="destructiveGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.2} />
                                 </linearGradient>
                             </defs>
                             <XAxis dataKey="name" stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} />
@@ -114,7 +112,7 @@ export const DailyPerformance = memo(function DailyPerformance({ trades }: Daily
                             />
                             <Bar dataKey="pnl" radius={[4, 4, 0, 0]} maxBarSize={60}>
                                 {dailyStats.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? "url(#successGradientDaily)" : "url(#destructiveGradientDaily)"} />
+                                    <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? "url(#successGradient)" : "url(#destructiveGradient)"} />
                                 ))}
                             </Bar>
                         </BarChart>

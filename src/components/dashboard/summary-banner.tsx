@@ -3,12 +3,12 @@
 
 import { useMemo } from 'react';
 import { type Trade } from '@/lib/types';
-import { isThisMonth, isToday, startOfMonth } from 'date-fns';
-import { TrendingUp, TrendingDown, Target, HelpCircle, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { isThisMonth } from 'date-fns';
+import { TrendingUp, AlertTriangle, Target } from 'lucide-react';
 import { StreamerModeText } from '@/components/streamer-mode-text';
 import { useTargets } from '@/hooks/use-targets';
 import { Progress } from '@/components/ui/progress';
-import { SetTargetsDialog } from '@/components/trade/set-targets-dialog';
+import { SetTargetsDialog } from '@/components/settings/set-targets-dialog';
 
 type SummaryBannerProps = {
   trades: Trade[];

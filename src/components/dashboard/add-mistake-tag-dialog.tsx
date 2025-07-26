@@ -17,14 +17,10 @@ import { Input } from "@/components/ui/input";
 import { PlusCircle, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useMistakeTags } from "@/hooks/use-mistake-tags";
 
-type AddMistakeTagDialogProps = {
-  mistakeTags: string[];
-  addMistakeTag: (newTag: string) => Promise<boolean>;
-  deleteMistakeTag: (tag: string) => Promise<void>;
-};
-
-export function AddMistakeTagDialog({ mistakeTags, addMistakeTag, deleteMistakeTag }: AddMistakeTagDialogProps) {
+export function AddMistakeTagDialog() {
+  const { mistakeTags, addMistakeTag, deleteMistakeTag, isLoaded } = useMistakeTags();
   const [open, setOpen] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -73,7 +69,7 @@ export function AddMistakeTagDialog({ mistakeTags, addMistakeTag, deleteMistakeT
         <div className="grid gap-4 py-4">
             <h4 className="font-medium text-sm">Existing Tags</h4>
             <ScrollArea className="h-40 w-full rounded-md border p-2">
-                {mistakeTags.length > 0 ? (
+                {isLoaded && mistakeTags.length > 0 ? (
                     mistakeTags.map(tag => (
                         <div key={tag} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
                             <span className="text-sm font-medium">{tag}</span>

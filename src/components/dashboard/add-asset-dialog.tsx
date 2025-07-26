@@ -17,14 +17,10 @@ import { Input } from "@/components/ui/input";
 import { PlusCircle, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAssets } from "@/hooks/use-assets";
 
-type AddAssetDialogProps = {
-  assets: string[];
-  addAsset: (newAsset: string) => Promise<boolean>;
-  deleteAsset: (asset: string) => Promise<void>;
-};
-
-export function AddAssetDialog({ assets, addAsset, deleteAsset }: AddAssetDialogProps) {
+export function AddAssetDialog() {
+  const { assets, addAsset, deleteAsset, isLoaded } = useAssets();
   const [open, setOpen] = useState(false);
   const [newAsset, setNewAsset] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -73,7 +69,7 @@ export function AddAssetDialog({ assets, addAsset, deleteAsset }: AddAssetDialog
         <div className="grid gap-4 py-4">
             <h4 className="font-medium text-sm">Existing Assets</h4>
             <ScrollArea className="h-40 w-full rounded-md border p-2">
-                {assets.length > 0 ? (
+                {isLoaded && assets.length > 0 ? (
                     assets.map(asset => (
                         <div key={asset} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
                             <span className="text-sm font-medium">{asset}</span>

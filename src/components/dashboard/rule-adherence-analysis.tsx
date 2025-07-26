@@ -1,113 +1,91 @@
-
 "use client";
 
-import { useMemo, memo } from 'react';
-import type { Trade } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useMemo } from 'react';
+import { type Trade } from '@/lib/types';
+import { isThisMonth } from 'date-fns';
+import { TrendingUp, AlertTriangle, Target } from 'lucide-react';
+import { StreamerModeText } from '@/components/streamer-mode-text';
+import { useTargets } from '@/hooks/use-targets';
 import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { SetTargetsDialog } from '@/components/settings/set-targets-dialog';
 
-type RuleAdherenceAnalysisProps = {
-    trades: Trade[];
-    tradingRules: string[];
+type SummaryBannerProps = {
+  trades: Trade[];
 };
 
-export const RuleAdherenceAnalysis = memo(function RuleAdherenceAnalysis({ trades, tradingRules }: RuleAdherenceAnalysisProps) {
-    const analytics = useMemo(() => {
-        if (!tradingRules || tradingRules.length === 0) return [];
+export function SummaryBanner({ trades }: SummaryBannerProps) {
+  const { targets } = useTargets();
 
-        return tradingRules.map(rule => {
-            const tradesWhereRuleWasFollowed = trades.filter(trade => trade.rulesFollowed?.includes(rule));
-            
-            if (tradesWhereRuleWasFollowed.length === 0) {
-                return {
-                    rule,
-                    adherenceCount: 0,
-                    wins: 0,
-                    losses: 0,
-                    winRate: 0,
-                    netR: 0,
-                };
-            }
+  const monthStats = useMemo(() => {
+    const thisMonthsTrades = trades.filter(trade => isThisMonth(new Date(trade.date)));
+    if (thisMonthsTrades.length === 0) {
+      return { pnl: 0, topMistake: null };
+    }
 
-            const wins = tradesWhereRuleWasFollowed.filter(t => t.result === 'Win').length;
-            const losses = tradesWhereRuleWasFollowed.filter(t => t.result === 'Loss').length;
-            
-            const netR = tradesWhereRuleWasFollowed.reduce((acc, trade) => {
-                if (trade.result === 'Win') return acc + (trade.rr || 0);
-                if (trade.result === 'Loss') return acc - 1;
-                return acc;
-            }, 0);
-
-            const winRate = (wins + losses) > 0 ? (wins / (wins + losses)) * 100 : 0;
-
-            return {
-                rule,
-                adherenceCount: tradesWhereRuleWasFollowed.length,
-                wins,
-                losses,
-                winRate,
-                netR,
-            };
-        }).sort((a, b) => b.netR - a.netR); // Sort by most profitable rule
-
-    }, [trades, tradingRules]);
+    const pnl = thisMonthsTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+    const mistakeCounts: { [key: string]: number } = {};
+    thisMonthsTrades.forEach(trade => {
+      trade.mistakes?.forEach(mistake => {
+        mistakeCounts[mistake] = (mistakeCounts[mistake] || 0) + 1;
+      });
+    });
     
-    return (
-        <ScrollArea className="h-full">
-            {analytics.length > 0 ? (
-                <TooltipProvider>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="p-2">Rule</TableHead>
-                                <TableHead className="p-2 text-center">Adherence</TableHead>
-                                <TableHead className="p-2">Win Rate</TableHead>
-                                <TableHead className="text-right p-2">Net R</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {analytics.map(stat => (
-                                <TableRow key={stat.rule}>
-                                    <TableCell className="font-medium truncate p-2 max-w-xs">{stat.rule}</TableCell>
-                                    <TableCell className="text-center p-2">{stat.adherenceCount}</TableCell>
-                                    <TableCell className="p-2">
-                                        {stat.adherenceCount > 0 ? (
-                                            <Tooltip delayDuration={150}>
-                                                <TooltipTrigger asChild>
-                                                    <div className="flex items-center gap-2">
-                                                        <Progress value={stat.winRate} className="h-2 w-16" indicatorClassName={stat.winRate >= 50 ? 'bg-success' : 'bg-destructive'}/>
-                                                        <span className="text-xs text-muted-foreground w-10 text-right">{stat.winRate.toFixed(0)}%</span>
-                                                    </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>{stat.wins} Wins / {stat.losses} Losses</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        ) : (
-                                            <span className="text-xs text-muted-foreground">N/A</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className={cn(
-                                        "text-right font-semibold p-2",
-                                        stat.netR > 0 && "text-success",
-                                        stat.netR < 0 && "text-destructive"
-                                    )}>
-                                        {stat.netR.toFixed(2)}R
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TooltipProvider>
-            ) : (
-                <div className="h-full flex items-center justify-center text-muted-foreground p-4 text-center">
-                    <p>No trading rules defined or followed yet.</p>
-                </div>
-            )}
-        </ScrollArea>
-    );
-});
+    const topMistake = Object.entries(mistakeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+
+    return { pnl, topMistake };
+  }, [trades]);
+
+  const pnlProgress = targets.profit > 0 ? (monthStats.pnl / targets.profit) * 100 : 0;
+  const lossProgress = targets.loss > 0 ? (Math.abs(monthStats.pnl < 0 ? monthStats.pnl : 0) / targets.loss) * 100 : 0;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 rounded-lg border bg-card text-card-foreground p-3 shadow-sm">
+      <div className="flex flex-col justify-between gap-2">
+          <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success/10">
+                  <TrendingUp className="h-5 w-5 text-success" />
+              </div>
+              <div>
+                  <p className="text-xs text-muted-foreground">Monthly Profit Target</p>
+                  <StreamerModeText as="p" className="text-base font-bold font-headline text-success">
+                      {`$${monthStats.pnl.toFixed(2)} / $${targets.profit.toFixed(2)}`}
+                  </StreamerModeText>
+              </div>
+          </div>
+          <Progress value={pnlProgress} indicatorClassName="bg-success" />
+      </div>
+
+      <div className="flex flex-col justify-between gap-2">
+          <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                  <p className="text-xs text-muted-foreground">Max Loss Limit</p>
+                   <StreamerModeText as="p" className="text-base font-bold font-headline text-destructive">
+                      {`$${Math.abs(monthStats.pnl < 0 ? monthStats.pnl : 0).toFixed(2)} / $${targets.loss.toFixed(2)}`}
+                  </StreamerModeText>
+              </div>
+          </div>
+          <Progress value={lossProgress} indicatorClassName="bg-destructive"/>
+      </div>
+
+      <div className="flex flex-col justify-between gap-2">
+          <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Target className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                  <p className="text-xs text-muted-foreground">This Month's Top Mistake</p>
+                  <p className="text-base font-semibold truncate">{monthStats.topMistake || 'None'}</p>
+              </div>
+          </div>
+          <SetTargetsDialog>
+             <button className="w-full text-center text-xs text-primary underline-offset-4 hover:underline">
+                Set Targets
+             </button>
+          </SetTargetsDialog>
+      </div>
+    </div>
+  );
+}
