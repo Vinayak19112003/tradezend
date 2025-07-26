@@ -13,40 +13,41 @@ The journal is built with a focus on data-driven insights, psychological analysi
 
 ## Core Features
 
-The application is organized into several key pages, each serving a distinct purpose in a trader's workflow.
+The application is organized into a primary tab-based interface for a seamless workflow.
 
-### 1. Dashboard (`/dashboard`)
+### 1. Dashboard Tab
 The main landing page, providing a high-level, at-a-glance overview of your trading performance.
 - **Summary Banner**: Displays progress towards monthly profit/loss targets and highlights the most common mistake for the current month.
 - **Key Performance Indicators (KPIs)**: A series of cards showing vital statistics like Total PNL, Win Rate, and Net R for the selected time period.
 - **Monthly Calendar**: A visual, color-coded calendar showing daily profitability, allowing for quick identification of winning and losing days.
 - **Equity Curve**: A chart that visualizes your cumulative R-value over time, showing the growth of your account.
 
-### 2. Trade Log (`/journal`)
+### 2. Journal Tab
 The central hub for all your individual trade records.
-- **Paginated Table**: Displays all trades in a clean, organized table with infinite scrolling ("Load More") for efficient performance. A responsive card view is used on mobile devices.
-- **Add/Edit Trades**: A comprehensive form allows for detailed logging, including entry/exit prices, strategy, psychological state, and screenshots.
+- **Responsive Trade List**: Displays all trades in a clean, organized table on desktops and an intuitive card view on mobile devices.
+- **Add/Edit Trades**: A comprehensive modal form allows for detailed logging, including entry/exit prices, strategy, psychological state, and screenshots.
 - **AI-Powered Import**: Users can upload a CSV, PDF, or even a screenshot of their broker statement, and the AI will automatically parse and import the trades, skipping any duplicates based on the Ticket/Order ID.
-- **Export & Clear**: Functionality to export all trades to CSV/PDF or clear the entire log.
+- **Export & Clear**: Functionality to export all trades to CSV/PDF or clear the entire log for a selected account.
 
-### 3. Analytics (`/analytics`)
+### 3. Analytics Tab
 A dedicated page for a deep-dive analysis of your trading data.
-- **Strategy Analytics**: A breakdown of performance by each trading strategy, showing which are most profitable.
-- **Mistake Analysis**: A pie chart visualizing the most frequently made trading errors.
-- **Performance Metrics**: A radar chart providing a holistic view of key metrics like Win Rate, Profit Factor, and Discipline.
-- **Time-Based Analysis**: Charts that analyze performance by the day of the week and the hour of the day, helping identify your most and least profitable trading times.
-- **Rule Adherence**: A table that shows the impact of following or breaking your predefined trading rules on your profitability.
+- **Core Metrics**: Cards displaying detailed statistics like largest win/loss, average win/loss, and most/least profitable day of the week.
+- **Performance by Day/Session**: Bar charts visualizing profitability across different days of the week and trading sessions (London, New York, Asian).
+- **P&L and R-Multiple Distribution**: Butterfly and Bar charts showing the frequency and magnitude of different profit/loss and R-multiple outcomes.
+- **Trading Model View**: A sub-tab where you can define and manage your personal trading model checklists for various phases of your trading plan (e.g., Weekly Prep, Daily Prep, Execution).
 
-### 4. Performance (`/performance`)
-A page focused on advanced risk and return metrics.
-- **Drawdown Analysis**: Visualizes your equity curve against its peak to analyze the depth and duration of drawdowns.
-- **Risk-Adjusted Returns**: Cards displaying key metrics like Profit Factor, Expectancy, and Recovery Factor.
-- **Risk Distribution**: A chart showing your profitability based on how much you risked per trade.
+### 4. Performance Tab
+A page focused on advanced risk and return metrics, broken down into sub-sections.
+- **Psychology Analysis**: Features a Mistake Frequency chart and a comprehensive Performance Radar Chart to provide a holistic view of your trading skills and discipline.
+- **Risk Analysis**: Includes a Drawdown Analysis chart to visualize your equity curve against its peak, cards for key Risk-Adjusted Returns (Profit Factor, Expectancy), and a Risk Distribution chart analyzing profitability based on risk per trade.
+- **Time Analysis**: Provides stat cards for your most profitable time, day, duration, and session, along with charts analyzing performance by time of day, trade duration, and month-over-month.
 
-### 5. Trading Model (`/analytics` > `Trading Model` tab)
-A page where you can define and manage your personal trading model.
-- **Editable Checklists**: Users can create, edit, reorder, and delete items for different phases of their trading plan (e.g., Weekly Prep, Daily Prep, Execution).
-- **Persistence**: The model is saved to the user's account and is integrated directly into the trade logging form.
+### 5. Settings Page
+A centralized hub for managing your account and application preferences.
+- **User Profile**: Displays user email and provides a logout option.
+- **Account Management**: Add, edit, or remove different trading accounts.
+- **Preferences**: Customize the app theme (Light/Dark), currency format (USD/INR), and toggle Streamer Mode to hide sensitive financial data.
+- **Security**: Allows users to request a password reset link.
 
 ---
 
