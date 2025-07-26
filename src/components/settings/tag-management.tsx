@@ -3,7 +3,6 @@
 
 import { useAssets } from "@/hooks/use-assets";
 import { useMistakeTags } from "@/hooks/use-mistake-tags";
-import { useStrategies } from "@/hooks/use-strategies";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { useState } from "react";
 import { Input } from "../ui/input";
@@ -14,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 
 type ManageableHook = 
     | ReturnType<typeof useAssets> 
-    | ReturnType<typeof useStrategies> 
     | ReturnType<typeof useMistakeTags>;
 
 const TagSection = ({ title, description, useHook, noun }: { title: string; description: string; useHook: () => ManageableHook; noun: string; }) => {
@@ -104,7 +102,6 @@ export default function TagManagement() {
             </CardHeader>
             <CardContent className="space-y-8">
                 <TagSection title="Assets" description="The financial instruments you trade." useHook={useAssets} noun="asset" />
-                <TagSection title="Strategies" description="Your unique trading strategies and setups." useHook={useStrategies} noun="strategy" />
             </CardContent>
         </Card>
     );

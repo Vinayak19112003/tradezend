@@ -49,7 +49,4 @@ export const DEFAULT_ACCOUNTS = [
 
 export const DEFAULT_GENERAL_SETTINGS = {
     currency: 'usd',
-    defaultOrderDate: 'previous',
-    defaultSymbol: 'EURUSD',
-    defaultQty: 1,
 };

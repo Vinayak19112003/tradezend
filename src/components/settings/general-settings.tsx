@@ -4,8 +4,6 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useGeneralSettings, type GeneralSettings } from '@/hooks/use-general-settings';
@@ -48,14 +46,7 @@ export default function GeneralSettings() {
                     <Skeleton className="h-4 w-64" />
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                    </div>
+                    <Skeleton className="h-10 w-full" />
                 </CardContent>
             </Card>
         );
@@ -72,7 +63,7 @@ export default function GeneralSettings() {
             <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <Label htmlFor="currency-format">Currency Format</Label>
+                        <label htmlFor="currency-format" className="text-sm font-medium">Currency Format</label>
                         <Select
                             value={localSettings.currency}
                             onValueChange={(value) => handleInputChange('currency', value)}
@@ -82,51 +73,9 @@ export default function GeneralSettings() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="usd">US Dollar - $</SelectItem>
-                                <SelectItem value="cad">Canadian Dollar - $</SelectItem>
-                                <SelectItem value="eur">Euro - €</SelectItem>
-                                <SelectItem value="gbp">British Pound Sterling - £</SelectItem>
                                 <SelectItem value="inr">Indian Rupee - ₹</SelectItem>
-                                <SelectItem value="jpy">Japanese Yen - ¥</SelectItem>
-                                <SelectItem value="sek">Swedish Krona - kr</SelectItem>
                             </SelectContent>
                         </Select>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="default-order-date">Default Order Date</Label>
-                        <Select
-                           value={localSettings.defaultOrderDate}
-                           onValueChange={(value) => handleInputChange('defaultOrderDate', value)}
-                        >
-                            <SelectTrigger id="default-order-date">
-                                <SelectValue placeholder="Select default" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="previous">Previous Order Entry</SelectItem>
-                                <SelectItem value="today">Today's Date</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="default-symbol">Default Symbol</Label>
-                        <Input
-                            id="default-symbol"
-                            placeholder="e.g., EURUSD"
-                            value={localSettings.defaultSymbol}
-                            onChange={(e) => handleInputChange('defaultSymbol', e.target.value)}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="default-qty">Default Qty</Label>
-                        <Input
-                            id="default-qty"
-                            type="number"
-                            placeholder="e.g., 1"
-                            value={localSettings.defaultQty}
-                            onChange={(e) => handleInputChange('defaultQty', Number(e.target.value))}
-                        />
                     </div>
                 </div>
                 

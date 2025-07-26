@@ -7,9 +7,6 @@ import { DEFAULT_GENERAL_SETTINGS } from '@/lib/constants';
 
 export type GeneralSettings = {
     currency: string;
-    defaultOrderDate: string;
-    defaultSymbol: string;
-    defaultQty: number;
 };
 
 export function useGeneralSettings() {
