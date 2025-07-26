@@ -4,7 +4,7 @@
 import { useMemo, memo, useState, useEffect } from 'react';
 import type { Trade } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import { useTheme } from "next-themes";
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -25,14 +25,19 @@ export default memo(function RMultipleDistribution({ trades }: RMultipleDistribu
         
         const rMultiples = trades.map(t => t.result === 'Loss' ? -1 : (t.rr || 0));
         
-        const maxR = Math.max(...rMultiples.map(Math.abs));
-        const binSize = Math.ceil(maxR / 10) || 1;
+        const maxR = Math.max(...rMultiples.filter(r => r > 0), 1);
+        const binSize = Math.ceil(maxR / 5) || 1; // Create up to 5 bins for wins
         const bins: { [key: string]: { name: string, range: [number, number], wins: number, losses: number } } = {};
 
-        for (let i = -1; i < maxR + binSize; i += binSize) {
-             const start = i < 0 ? -1 : Math.floor(i);
+        // Bin for losses
+        bins['-1R'] = { name: '-1R', range: [-1, -1], wins: 0, losses: 0 };
+        
+        // Bins for wins
+        for (let i = 0; i < maxR; i += binSize) {
+             const start = Math.floor(i);
              const end = start + binSize;
-             const name = start < 0 ? '-1R' : `${start}-${end}R`;
+             const name = `${start}-${end}R`;
+             if (start === 0 && end === 0) continue;
              bins[name] = { name, range: [start, end], wins: 0, losses: 0 };
         }
         
@@ -41,6 +46,7 @@ export default memo(function RMultipleDistribution({ trades }: RMultipleDistribu
                 if (bins['-1R']) bins['-1R'].losses++;
              } else {
                  const binKey = Object.keys(bins).find(k => {
+                     if (k === '-1R') return false;
                      const bin = bins[k];
                      return r >= bin.range[0] && r < bin.range[1];
                  });
@@ -75,7 +81,7 @@ export default memo(function RMultipleDistribution({ trades }: RMultipleDistribu
                               fontSize={12}
                               tickLine={false}
                               axisLine={false}
-                              label={{ value: 'Frequency', angle: -90, position: 'insideLeft', fill: tickColor, fontSize: 12 }}
+                              label={{ value: 'Frequency', angle: -90, position: 'insideLeft', fill: tickColor, fontSize: 12, dy: -10 }}
                             />
                             <Tooltip
                                 contentStyle={{
@@ -85,8 +91,9 @@ export default memo(function RMultipleDistribution({ trades }: RMultipleDistribu
                                 }}
                                 cursor={{ fill: 'hsla(var(--accent) / 0.2)' }}
                             />
-                            <Bar dataKey="wins" name="Wins" stackId="a" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="losses" name="Losses" stackId="a" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                            <Legend wrapperStyle={{fontSize: "0.8rem"}} />
+                            <Bar dataKey="wins" name="Wins" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                            <Bar dataKey="losses" name="Losses" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} maxBarSize={40} />
                         </BarChart>
                     </ResponsiveContainer>
                 ) : (
