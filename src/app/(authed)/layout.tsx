@@ -127,10 +127,10 @@ export default function AuthedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <TradesProvider>
-        <AccountProvider>
+    <AccountProvider>
+        <TradesProvider>
             <AuthedLayoutContent>{children}</AuthedLayoutContent>
-        </AccountProvider>
-    </TradesProvider>
+        </TradesProvider>
+    </AccountProvider>
   )
 }

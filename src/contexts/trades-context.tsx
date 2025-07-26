@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, type ReactNode, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, type ReactNode, useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -16,22 +16,29 @@ import {
   runTransaction,
   where,
   setDoc,
+  CollectionReference,
+  orderBy,
+  onSnapshot
 } from "firebase/firestore";
 import { Trade } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { DEFAULT_ACCOUNTS } from '@/lib/constants';
+import { useAccountContext } from './account-context';
 
 const TRADES_COLLECTION = 'trades';
 const ACCOUNTS_COLLECTION = 'settings';
 const ACCOUNTS_DOC_ID = 'userConfig'; 
 
 interface TradesContextType {
+    trades: Trade[];
+    isTradesLoading: boolean;
     addTrade: (trade: Omit<Trade, 'id'>) => Promise<boolean>;
     addMultipleTrades: (newTrades: Omit<Trade, 'id'>[]) => Promise<{success: boolean, addedCount: number}>;
     updateTrade: (trade: Trade) => Promise<boolean>;
     deleteTrade: (id: string) => Promise<boolean>;
     deleteAllTrades: (accountId: string) => Promise<boolean>;
+    triggerRefresh: () => void;
     refreshKey: number;
 }
 
@@ -40,6 +47,10 @@ const TradesContext = createContext<TradesContextType | undefined>(undefined);
 export function TradesProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
     const { toast } = useToast();
+    const { selectedAccountId } = useAccountContext();
+
+    const [trades, setTrades] = useState<Trade[]>([]);
+    const [isTradesLoading, setIsTradesLoading] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
 
     const triggerRefresh = () => setRefreshKey(prev => prev + 1);
@@ -54,6 +65,49 @@ export function TradesProvider({ children }: { children: ReactNode }) {
         return doc(db, 'users', user.uid, ACCOUNTS_COLLECTION, ACCOUNTS_DOC_ID);
     }, [user]);
 
+     useEffect(() => {
+        if (!user || !selectedAccountId) {
+            setTrades([]);
+            setIsTradesLoading(false);
+            return;
+        }
+
+        setIsTradesLoading(true);
+        const tradesCollectionRef = getTradesCollectionRef() as CollectionReference<Trade>;
+        const q = query(tradesCollectionRef, where('accountId', '==', selectedAccountId), orderBy('date', 'asc'));
+
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const fetchedTrades = querySnapshot.docs.map(doc => ({
+                ...doc.data(),
+                id: doc.id,
+                date: (doc.data().date as unknown as Timestamp).toDate()
+            })) as Trade[];
+            setTrades(fetchedTrades);
+            setIsTradesLoading(false);
+        }, (error) => {
+             if (error.code === 'failed-precondition') {
+                console.error("Firebase Index Required:", error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Firebase Index Required',
+                    description: 'Please create the required Firestore index by clicking the link in the console error.',
+                    duration: 10000,
+                });
+            } else {
+                console.error("Error fetching trades:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Could not fetch trade data."
+                });
+            }
+            setIsTradesLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [user, selectedAccountId, getTradesCollectionRef, toast]);
+
+
     const addTrade = useCallback(async (trade: Omit<Trade, 'id'>) => {
         const tradesCollection = getTradesCollectionRef();
         const accountsDocRef = getAccountsDocRef();
@@ -61,10 +115,7 @@ export function TradesProvider({ children }: { children: ReactNode }) {
 
         try {
             await runTransaction(db, async (transaction) => {
-                // READ FIRST
                 const accountsDoc = await transaction.get(accountsDocRef);
-                
-                // PREPARE WRITES
                 const newTradeRef = doc(tradesCollection);
 
                 if (!accountsDoc.exists()) {
@@ -82,18 +133,15 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                     const currentBalance = updatedAccounts[accountIndex].currentBalance ?? updatedAccounts[accountIndex].initialBalance;
                     updatedAccounts[accountIndex].currentBalance = currentBalance + (trade.pnl || 0);
 
-                    // WRITE to accounts
                     transaction.update(accountsDocRef, { accounts: updatedAccounts });
                 }
                 
-                // WRITE to trades
                 transaction.set(newTradeRef, {
                     ...trade,
                     date: Timestamp.fromDate(trade.date),
                 });
             });
 
-            triggerRefresh();
             return true;
         } catch (error: any) {
             console.error("Error adding trade:", error);
@@ -114,7 +162,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
             });
 
             await batch.commit();
-            triggerRefresh();
 
             toast({
                 title: "Import Successful",
@@ -137,7 +184,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
         try {
             const tradeRef = doc(tradesCollection, trade.id);
             await runTransaction(db, async (transaction) => {
-                // READS FIRST
                 const originalTradeDoc = await transaction.get(tradeRef);
                 const accountsDoc = await transaction.get(accountsDocRef);
 
@@ -145,7 +191,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                     throw new Error("Original trade not found for update.");
                 }
 
-                // PREPARE WRITES
                 const originalTrade = originalTradeDoc.data() as Trade;
                 const pnlDifference = (trade.pnl || 0) - (originalTrade.pnl || 0);
 
@@ -157,7 +202,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                         const updatedAccounts = [...accounts];
                         const currentBalance = updatedAccounts[accountIndex].currentBalance ?? updatedAccounts[accountIndex].initialBalance;
                         updatedAccounts[accountIndex].currentBalance = currentBalance + pnlDifference;
-                        // WRITE to accounts
                         transaction.update(accountsDocRef, { accounts: updatedAccounts });
                     } else {
                          console.warn(`Account with ID ${trade.accountId} not found. Skipping balance update.`);
@@ -166,7 +210,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                      console.warn("Accounts document not found for user. Skipping balance update.");
                 }
                 
-                // WRITE to trade
                 const { id, ...tradeData } = trade;
                 transaction.update(tradeRef, {
                     ...tradeData,
@@ -174,7 +217,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                 });
             });
 
-            triggerRefresh();
             return true;
         } catch (error: any) {
             console.error("Error updating trade:", error);
@@ -192,7 +234,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
             const tradeRef = doc(tradesCollection, id);
 
              await runTransaction(db, async (transaction) => {
-                // READS FIRST
                 const tradeDoc = await transaction.get(tradeRef);
                 const accountsDoc = await transaction.get(accountsDocRef);
 
@@ -200,7 +241,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                     throw new Error("Trade to delete not found.");
                 }
 
-                // PREPARE WRITES
                 const tradeToDelete = tradeDoc.data() as Trade;
                 const pnlToRemove = tradeToDelete.pnl || 0;
 
@@ -212,7 +252,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                         const updatedAccounts = [...accounts];
                         const currentBalance = updatedAccounts[accountIndex].currentBalance ?? updatedAccounts[accountIndex].initialBalance;
                         updatedAccounts[accountIndex].currentBalance = currentBalance - pnlToRemove;
-                        // WRITE to accounts
                         transaction.update(accountsDocRef, { accounts: updatedAccounts });
                     } else {
                          console.warn(`Account with ID ${tradeToDelete.accountId} not found. Skipping balance update.`);
@@ -221,11 +260,9 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                      console.warn("Accounts document not found for user. Skipping balance update.");
                 }
                 
-                // WRITE to trade (delete)
                 transaction.delete(tradeRef);
              });
 
-            triggerRefresh();
             return true;
         } catch (error: any) {
             console.error("Error deleting trade:", error);
@@ -250,7 +287,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                 description: "Your account balance for this account has not been reset. You may need to edit it manually in Settings.",
             })
 
-            triggerRefresh();
             return true;
         } catch (error) {
             console.error("Error deleting all trades:", error);
@@ -260,13 +296,16 @@ export function TradesProvider({ children }: { children: ReactNode }) {
     }, [getTradesCollectionRef, toast]);
 
     const value = useMemo(() => ({
+        trades,
+        isTradesLoading,
         addTrade,
         addMultipleTrades,
         updateTrade,
         deleteTrade,
         deleteAllTrades,
+        triggerRefresh,
         refreshKey
-    }), [addTrade, addMultipleTrades, updateTrade, deleteTrade, deleteAllTrades, refreshKey]);
+    }), [trades, isTradesLoading, addTrade, addMultipleTrades, updateTrade, deleteTrade, deleteAllTrades, refreshKey]);
 
     return <TradesContext.Provider value={value}>{children}</TradesContext.Provider>;
 }

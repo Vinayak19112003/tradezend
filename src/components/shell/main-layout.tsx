@@ -6,12 +6,7 @@ import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Trade } from "@/lib/types";
-import { useAuth } from "@/hooks/use-auth";
-import { db } from "@/lib/firebase";
-import { collection, query, getDocs, orderBy, CollectionReference, where, Timestamp } from "firebase/firestore";
-import { useToast } from "@/hooks/use-toast";
 import { useTrades } from "@/contexts/trades-context";
-import { useAccountContext } from "@/contexts/account-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Home, LineChart, Package, Users, Settings } from 'lucide-react';
 import DashboardPage from "@/app/(authed)/dashboard/page";
@@ -42,14 +37,7 @@ const TabSkeleton = () => (
 
 
 export default function MainLayout() {
-    const { user } = useAuth();
-    const { toast } = useToast();
-    const { refreshKey } = useTrades();
-    const { selectedAccountId } = useAccountContext();
-    
-    const [trades, setTrades] = useState<Trade[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
+    const { trades, isTradesLoading } = useTrades();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -70,58 +58,12 @@ export default function MainLayout() {
         router.push(`${pathname}${query}`);
     };
 
-    // Effect to fetch all trades for performance analysis
-    useEffect(() => {
-        const fetchAllTrades = async () => {
-            if (!user || !selectedAccountId) {
-                setTrades([]);
-                setIsLoading(false);
-                return;
-            }
-
-            setIsLoading(true);
-            try {
-                const tradesCollection = collection(db, 'users', user.uid, 'trades') as CollectionReference<Trade>;
-                
-                const q = query(tradesCollection, where('accountId', '==', selectedAccountId), orderBy('date', 'asc'));
-                
-                const querySnapshot = await getDocs(q);
-                const fetchedTrades = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, date: (doc.data().date as unknown as Timestamp).toDate() })) as Trade[];
-                setTrades(fetchedTrades);
-
-            } catch (error: any) {
-                 if (error.code === 'failed-precondition') {
-                    console.error("Firebase Index Required:", error);
-                    toast({
-                        variant: 'destructive',
-                        title: 'Firebase Index Required',
-                        description: 'Please create the required Firestore index by clicking the link in the console error.',
-                        duration: 10000,
-                    });
-                } else {
-                    console.error("Error fetching trades for performance analysis:", error);
-                    toast({
-                        variant: "destructive",
-                        title: "Error",
-                        description: "Could not fetch trade data for performance analysis."
-                    });
-                }
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        if (user && selectedAccountId) {
-            fetchAllTrades();
-        }
-    }, [user, toast, refreshKey, selectedAccountId]);
-
     const CurrentPageComponent = NAV_TABS.find(tab => tab.value === activeTab)?.component || DashboardPage;
     
     if (activeTab === 'settings') {
          return (
              <div className="mt-4">
-                {isLoading ? <TabSkeleton /> : <SettingsPage trades={trades} />}
+                {isTradesLoading ? <TabSkeleton /> : <SettingsPage trades={trades} />}
              </div>
          )
     }
@@ -141,7 +83,7 @@ export default function MainLayout() {
             </div>
             
             <TabsContent value={activeTab} forceMount className="mt-4">
-               {isLoading ? <TabSkeleton /> : <CurrentPageComponent trades={trades} />}
+               {isTradesLoading ? <TabSkeleton /> : <CurrentPageComponent trades={trades} />}
             </TabsContent>
         </Tabs>
     );
