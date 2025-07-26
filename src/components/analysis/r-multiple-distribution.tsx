@@ -4,7 +4,7 @@
 import { useMemo, memo, useState, useEffect } from 'react';
 import type { Trade } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useTheme } from "next-themes";
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -31,35 +31,62 @@ export default memo(function RMultipleDistribution({ trades }: RMultipleDistribu
     const rMultipleData = useMemo(() => {
         if (trades.length === 0) return [];
 
-        const bins: { [key: string]: { name: string, wins: number, losses: number } } = R_BINS.reduce((acc, bin) => {
-            acc[bin.name] = { name: bin.name, wins: 0, losses: 0 };
+        const bins: { [key: string]: { name: string, netR: number, trades: number } } = R_BINS.reduce((acc, bin) => {
+            acc[bin.name] = { name: bin.name, netR: 0, trades: 0 };
             return acc;
-        }, {} as { [key: string]: { name: string, wins: number, losses: number } });
+        }, {} as { [key: string]: { name: string, netR: number, trades: number } });
 
         trades.forEach(trade => {
-            if (trade.result === 'Loss') {
-                bins['-1R'].losses++;
-            } else if (trade.result === 'Win') {
-                const rValue = trade.rr || 0;
-                const bin = R_BINS.find(b => rValue >= b.range[0] && rValue < b.range[1]);
-                if (bin) {
-                    bins[bin.name].wins++;
-                }
+            let rValue = 0;
+            if (trade.result === 'Win') {
+                rValue = trade.rr || 0;
+            } else if (trade.result === 'Loss') {
+                rValue = -1;
+            } else {
+                return; // Skip BE trades for this calculation
+            }
+            
+            const bin = R_BINS.find(b => rValue >= b.range[0] && rValue < b.range[1]);
+            if (bin) {
+                bins[bin.name].netR += rValue;
+                bins[bin.name].trades++;
             }
         });
 
-        return Object.values(bins).filter(b => b.wins > 0 || b.losses > 0);
+        return Object.values(bins)
+            .filter(b => b.trades > 0)
+            .map(b => ({ ...b, netR: parseFloat(b.netR.toFixed(2))}));
 
     }, [trades]);
 
     const tickColor = theme === 'dark' ? '#888888' : '#333333';
     const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    const successColor = 'hsl(var(--success))';
+    const destructiveColor = 'hsl(var(--destructive))';
+
+    const CustomTooltip = ({ active, payload, label }: any) => {
+        if (active && payload && payload.length) {
+            const data = payload[0].payload;
+            return (
+                <div className="rounded-lg border bg-background p-2 shadow-sm text-sm">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        <div className="col-span-2 font-bold mb-1">R-Multiple: {label}</div>
+                        <div className="text-muted-foreground">Net R</div>
+                        <div className="font-semibold text-right">{data.netR.toFixed(2)}R</div>
+                        <div className="text-muted-foreground">Trades</div>
+                        <div className="font-semibold text-right">{data.trades}</div>
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>R-Multiple Distribution</CardTitle>
-                <CardDescription>Frequency of trade outcomes by R-multiple.</CardDescription>
+                <CardDescription>Net R-value per trade outcome category.</CardDescription>
             </CardHeader>
             <CardContent className="h-[400px]">
                 {!mounted ? (
@@ -67,15 +94,24 @@ export default memo(function RMultipleDistribution({ trades }: RMultipleDistribu
                 ) : rMultipleData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={rMultipleData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                             <defs>
+                                <linearGradient id="successGradientR" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={successColor} stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor={successColor} stopOpacity={0.2} />
+                                </linearGradient>
+                                <linearGradient id="destructiveGradientR" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={destructiveColor} stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor={destructiveColor} stopOpacity={0.2} />
+                                </linearGradient>
+                            </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                             <XAxis dataKey="name" stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis
-                              allowDecimals={false}
                               stroke={tickColor}
                               fontSize={12}
                               tickLine={false}
                               axisLine={false}
-                              label={{ value: 'Frequency', angle: -90, position: 'insideLeft', fill: tickColor, fontSize: 12, dy: -10 }}
+                              label={{ value: 'Net R', angle: -90, position: 'insideLeft', fill: tickColor, fontSize: 12, dy: 40 }}
                             />
                             <Tooltip
                                 contentStyle={{
@@ -84,10 +120,13 @@ export default memo(function RMultipleDistribution({ trades }: RMultipleDistribu
                                     borderRadius: 'var(--radius)',
                                 }}
                                 cursor={{ fill: 'hsla(var(--accent) / 0.2)' }}
+                                content={<CustomTooltip />}
                             />
-                            <Legend wrapperStyle={{fontSize: "0.8rem"}} />
-                            <Bar dataKey="wins" name="Wins" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                            <Bar dataKey="losses" name="Losses" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                            <Bar dataKey="netR" name="Net R" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                                {rMultipleData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.netR >= 0 ? "url(#successGradientR)" : "url(#destructiveGradientR)"} />
+                                ))}
+                            </Bar>
                         </BarChart>
                     </ResponsiveContainer>
                 ) : (
