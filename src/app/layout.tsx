@@ -47,8 +47,13 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <StreamerModeProvider>
-              {children}
-              <Toaster />
+                <div className="relative min-h-screen w-full">
+                    <div className="absolute inset-0 z-0 light-mode-gradient" />
+                    <div className="relative z-10">
+                        {children}
+                    </div>
+                    <Toaster />
+                </div>
             </StreamerModeProvider>
           </ThemeProvider>
         </AuthProvider>

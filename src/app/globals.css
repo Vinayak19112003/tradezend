@@ -69,3 +69,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+    .light .light-mode-gradient {
+        background: radial-gradient(125% 125% at 50% 90%, hsl(var(--card)) 40%, hsl(var(--primary)) 100%);
+        opacity: 0.15;
+    }
+}
