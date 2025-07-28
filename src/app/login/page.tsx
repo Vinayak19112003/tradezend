@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import DarkVeil from "@/components/shell/dark-veil";
 
 // --- Icons ---
 const MailIcon: React.FC = () => (
@@ -151,126 +152,136 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-black rounded-2xl shadow-xl p-8">
-            <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold font-headline text-gray-900 dark:text-gray-100">Welcome Back!</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-2">Sign in to continue to your journal.</p>
-            </div>
+    <div className="relative min-h-screen">
+       <DarkVeil 
+            hueShift={200}
+            noiseIntensity={0.03}
+            scanlineIntensity={0.05}
+            scanlineFrequency={200}
+            warpAmount={0.3}
+            speed={0.2}
+        />
+        <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div className="w-full max-w-md">
+                <div className="bg-white dark:bg-black rounded-2xl shadow-xl p-8">
+                    <div className="text-center mb-8">
+                        <h1 className="text-3xl font-bold font-headline text-gray-900 dark:text-gray-100">Welcome Back!</h1>
+                        <p className="text-gray-600 dark:text-gray-400 mt-2">Sign in to continue to your journal.</p>
+                    </div>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
-                          <MailIcon />
-                        </div>
-                        <FormControl>
-                          <input
-                            {...field}
-                            type="email"
-                            placeholder="Enter your email"
-                            className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
-                          />
-                        </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                     <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
-                          <KeyIcon />
-                        </div>
-                        <FormControl>
-                          <input
-                           {...field}
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Enter your password"
-                            className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
-                          />
-                        </FormControl>
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                        >
-                          {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                        </button>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-                <DialogTrigger asChild>
-                    <div className="text-right">
-                        <button type="button" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors">
-                            Forgot password?
-                        </button>
-                    </div>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Reset Password</DialogTitle>
-                    <DialogDescription>
-                      Enter your email address and we&apos;ll send you a link to reset your password.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <Form {...forgotPasswordForm}>
-                    <form onSubmit={forgotPasswordForm.handleSubmit(onForgotPasswordSubmit)} className="space-y-4 py-4">
-                        <FormField
-                        control={forgotPasswordForm.control}
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <FormField
+                        control={form.control}
                         name="email"
                         render={({ field }) => (
-                            <FormItem>
-                            <FormControl>
-                                <Input placeholder="name@example.com" {...field} />
-                            </FormControl>
+                        <FormItem>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                                <MailIcon />
+                                </div>
+                                <FormControl>
+                                <input
+                                    {...field}
+                                    type="email"
+                                    placeholder="Enter your email"
+                                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+                                />
+                                </FormControl>
+                            </div>
                             <FormMessage />
-                            </FormItem>
+                        </FormItem>
                         )}
-                        />
-                        <DialogFooter>
-                          <Button type="submit" disabled={isResetLoading}>
-                              {isResetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                              Send Reset Link
-                          </Button>
-                        </DialogFooter>
+                    />
+                    <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                        <FormItem>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                                <KeyIcon />
+                                </div>
+                                <FormControl>
+                                <input
+                                {...field}
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Enter your password"
+                                    className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+                                />
+                                </FormControl>
+                                <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                >
+                                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                                </button>
+                            </div>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+                        <DialogTrigger asChild>
+                            <div className="text-right">
+                                <button type="button" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors">
+                                    Forgot password?
+                                </button>
+                            </div>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Reset Password</DialogTitle>
+                            <DialogDescription>
+                            Enter your email address and we&apos;ll send you a link to reset your password.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <Form {...forgotPasswordForm}>
+                            <form onSubmit={forgotPasswordForm.handleSubmit(onForgotPasswordSubmit)} className="space-y-4 py-4">
+                                <FormField
+                                control={forgotPasswordForm.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormControl>
+                                        <Input placeholder="name@example.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                                />
+                                <DialogFooter>
+                                <Button type="submit" disabled={isResetLoading}>
+                                    {isResetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Send Reset Link
+                                </Button>
+                                </DialogFooter>
+                            </form>
+                        </Form>
+                        </DialogContent>
+                    </Dialog>
+
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-500 dark:to-purple-500 text-white font-semibold py-3 px-4 rounded-xl hover:from-blue-700 hover:to-purple-700 dark:hover:from-blue-600 dark:hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 transform transition-all duration-200 hover:scale-[1.02] shadow-lg flex items-center justify-center disabled:opacity-50"
+                    >
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Sign In
+                    </button>
                     </form>
-                  </Form>
-                </DialogContent>
-              </Dialog>
+                </Form>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-500 dark:to-purple-500 text-white font-semibold py-3 px-4 rounded-xl hover:from-blue-700 hover:to-purple-700 dark:hover:from-blue-600 dark:hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 transform transition-all duration-200 hover:scale-[1.02] shadow-lg flex items-center justify-center disabled:opacity-50"
-              >
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign In
-              </button>
-            </form>
-          </Form>
-
-          <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-            Don&apos;t have an account?{' '}
-            <Link href="/signup" className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors">
-              Sign up for free
-            </Link>
-          </p>
+                <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+                    Don&apos;t have an account?{' '}
+                    <Link href="/signup" className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors">
+                    Sign up for free
+                    </Link>
+                </p>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
   );
 }
