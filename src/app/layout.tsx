@@ -7,6 +7,7 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { StreamerModeProvider } from '@/contexts/streamer-mode-context';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import { cn } from '@/lib/utils';
+import DarkVeil from '@/components/shell/dark-veil';
 
 export const metadata: Metadata = {
   title: 'Anony Trading',
@@ -48,8 +49,14 @@ export default function RootLayout({
           >
             <StreamerModeProvider>
                 <div className="relative min-h-screen w-full">
-                    <div className="absolute inset-0 z-0 light-mode-gradient" />
-                    <div className="absolute inset-0 z-0 dark-mode-gradient" />
+                    <DarkVeil 
+                      hueShift={200}
+                      noiseIntensity={0.03}
+                      scanlineIntensity={0.05}
+                      scanlineFrequency={200}
+                      warpAmount={0.3}
+                      speed={0.2}
+                    />
                     <div className="relative z-10">
                         {children}
                     </div>

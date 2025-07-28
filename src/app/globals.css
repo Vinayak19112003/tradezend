@@ -71,11 +71,5 @@
 }
 
 @layer utilities {
-    .light .light-mode-gradient {
-        background: radial-gradient(125% 125% at 50% 90%, hsl(var(--card)) 40%, hsl(var(--primary)) 100%);
-        opacity: 0.15;
-    }
-    .dark .dark-mode-gradient {
-        background: radial-gradient(125% 125% at 50% 90%, #000000 40%, #072607 100%);
-    }
+    /* Removed old gradient styles */
 }
