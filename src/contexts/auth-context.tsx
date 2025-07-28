@@ -1,20 +1,17 @@
 
 'use client';
 
-import { createContext, useState, useEffect, ReactNode, useMemo } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { createContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
+import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  logout: () => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthContextType>({
-  user: null,
-  isLoading: true,
-});
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -29,12 +26,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const value = useMemo(() => ({ user, isLoading }), [user, isLoading]);
+  const logout = useCallback(async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
+  }, []);
+
+  const value = useMemo(() => ({ user, isLoading, logout }), [user, isLoading, logout]);
 
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
-        <div className="w-12 text-primary">
+        <div className="w-12 text-orange-600">
           <svg
             fill="currentColor"
             viewBox="0 0 24 24"
