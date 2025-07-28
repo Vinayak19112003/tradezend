@@ -53,8 +53,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
     const [isTradesLoading, setIsTradesLoading] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
 
-    const triggerRefresh = () => setRefreshKey(prev => prev + 1);
-
     const getTradesCollectionRef = useCallback(() => {
         if (!user || !db) return null;
         return collection(db, 'users', user.uid, TRADES_COLLECTION);
@@ -64,6 +62,10 @@ export function TradesProvider({ children }: { children: ReactNode }) {
         if (!user || !db) return null;
         return doc(db, 'users', user.uid, ACCOUNTS_COLLECTION, ACCOUNTS_DOC_ID);
     }, [user]);
+
+    const triggerRefresh = useCallback(() => {
+        setRefreshKey(prev => prev + 1);
+    }, []);
 
      useEffect(() => {
         if (!user || !selectedAccountId) {
@@ -191,7 +193,7 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                     throw new Error("Original trade not found for update.");
                 }
 
-                const originalTrade = originalTradeDoc.data() as Trade;
+                const originalTrade = { ...originalTradeDoc.data(), id: originalTradeDoc.id } as Trade;
                 const pnlDifference = (trade.pnl || 0) - (originalTrade.pnl || 0);
 
                 if (accountsDoc.exists()) {
@@ -281,12 +283,11 @@ export function TradesProvider({ children }: { children: ReactNode }) {
             const batch = writeBatch(db);
             querySnapshot.forEach(doc => batch.delete(doc.ref));
             await batch.commit();
-
+            
             toast({
                 title: "All Trades Cleared",
                 description: "Your account balance for this account has not been reset. You may need to edit it manually in Settings.",
             })
-
             return true;
         } catch (error) {
             console.error("Error deleting all trades:", error);
@@ -305,7 +306,7 @@ export function TradesProvider({ children }: { children: ReactNode }) {
         deleteAllTrades,
         triggerRefresh,
         refreshKey
-    }), [trades, isTradesLoading, addTrade, addMultipleTrades, updateTrade, deleteTrade, deleteAllTrades, refreshKey]);
+    }), [trades, isTradesLoading, addTrade, addMultipleTrades, updateTrade, deleteTrade, deleteAllTrades, refreshKey, triggerRefresh]);
 
     return <TradesContext.Provider value={value}>{children}</TradesContext.Provider>;
 }

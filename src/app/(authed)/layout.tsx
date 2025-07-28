@@ -8,7 +8,7 @@
  * modal dialog or a sheet on mobile devices.
  */
 
-import { useState, memo, useMemo } from 'react';
+import { useState, memo, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import type { Trade } from '@/lib/types';
 import AuthGuard from '@/components/auth/auth-guard';
@@ -16,7 +16,7 @@ import { useIsMobile } from '@/hooks/use-is-mobile';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { TradeFormProvider } from '@/contexts/trade-form-context';
+import { TradeFormProvider, useTradeForm } from '@/contexts/trade-form-context';
 import { Loader2 } from 'lucide-react';
 import { TradesProvider } from '@/contexts/trades-context';
 import { Header } from '@/components/shell/header';
@@ -35,85 +35,64 @@ const TradeForm = dynamic(() => import('@/components/trade/trade-form').then(mod
 });
 
 /**
- * The main content component for the authenticated layout.
- * It manages the state of the trade form (open/closed, editing/new).
- * @param {object} props - The component props.
- * @param {React.ReactNode} props.children - The page content to be rendered.
+ * This component contains the state and logic for the Add/Edit Trade form.
+ * It is separated so that it can be wrapped by the TradeFormProvider.
  */
-const AuthedLayoutContent = memo(function AuthedLayoutContent({ children }: { children: React.ReactNode }) {
-  // State for controlling the trade form's visibility.
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  // State to hold the trade data when editing an existing trade.
-  const [editingTrade, setEditingTrade] = useState<Trade | undefined>(undefined);
-  const isMobile = useIsMobile();
+const TradeFormController = memo(function TradeFormController({ children }: { children: React.ReactNode }) {
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [editingTrade, setEditingTrade] = useState<Trade | undefined>(undefined);
+    const { setOpenFormFunction } = useTradeForm();
+    const isMobile = useIsMobile();
 
-  /**
-   * Opens the trade form. If a trade object is provided, it sets the form
-   * to editing mode; otherwise, it's a new trade.
-   * @param {Trade} [trade] - The optional trade object to edit.
-   */
-  const handleOpenForm = (trade?: Trade) => {
-    setEditingTrade(trade);
-    setIsFormOpen(true);
-  };
+    const handleOpenForm = (trade?: Trade) => {
+        setEditingTrade(trade);
+        setIsFormOpen(true);
+    };
+    
+    // Register the function to open the form with the context
+    useEffect(() => {
+        setOpenFormFunction(() => handleOpenForm);
+    }, [setOpenFormFunction]);
 
-  /**
-   * Closes the trade form and resets the editing state.
-   */
-  const handleCloseForm = () => {
-    setEditingTrade(undefined);
-    setIsFormOpen(false);
-  };
+    const handleCloseForm = () => {
+        setEditingTrade(undefined);
+        setIsFormOpen(false);
+    };
 
-  /**
-   * A callback function that is triggered on successful save of a trade.
-   * It closes the form.
-   */
-  const handleSaveSuccess = () => {
-    handleCloseForm();
-  }
+    const handleSaveSuccess = () => {
+        handleCloseForm();
+    };
 
-  // Choose the appropriate modal component based on the device type.
-  const FormComponent = isMobile ? Sheet : Dialog;
-  const FormContentComponent = isMobile ? SheetContent : DialogContent;
-  const FormHeaderComponent = isMobile ? SheetHeader : DialogHeader;
-  const FormTitleComponent = isMobile ? SheetTitle : DialogTitle;
-  const FormDescriptionComponent = isMobile ? SheetDescription : DialogDescription;
-  
-  // Memoize the context value for the TradeForm to prevent unnecessary re-renders.
-  const tradeFormValue = useMemo(() => ({ openForm: handleOpenForm }), []);
-
-  return (
-    <AuthGuard>
-      <TradeFormProvider value={tradeFormValue}>
-          <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <Header />
-            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-                <MainLayout />
-            </main>
-          </div>
-          {/* Render the trade form modal/sheet */}
-          <FormComponent open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <FormContentComponent className={cn(isMobile ? "w-full" : "max-w-4xl")}>
-                  <FormHeaderComponent>
-                  <FormTitleComponent>{editingTrade ? "Edit Trade" : "Add New Trade"}</FormTitleComponent>
-                  <FormDescriptionComponent>
-                      Fill in the details of your trade. Accurate records lead to better insights.
-                  </FormDescriptionComponent>
-                  </FormHeaderComponent>
-                  <div className={cn("p-4 overflow-y-auto max-h-[80vh]")}>
-                      <TradeForm
-                        trade={editingTrade}
-                        onSaveSuccess={handleSaveSuccess}
-                        setOpen={setIsFormOpen}
-                      />
-                  </div>
-              </FormContentComponent>
-          </FormComponent>
-      </TradeFormProvider>
-    </AuthGuard>
-  );
+    const FormComponent = isMobile ? Sheet : Dialog;
+    const FormContentComponent = isMobile ? SheetContent : DialogContent;
+    const FormHeaderComponent = isMobile ? SheetHeader : DialogHeader;
+    const FormTitleComponent = isMobile ? SheetTitle : DialogTitle;
+    const FormDescriptionComponent = isMobile ? SheetDescription : DialogDescription;
+    
+    return (
+        <>
+            {children}
+            <FormComponent open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <FormContentComponent className={cn(isMobile ? "w-full" : "max-w-4xl")}>
+                    <FormHeaderComponent>
+                        <FormTitleComponent>{editingTrade ? "Edit Trade" : "Add New Trade"}</FormTitleComponent>
+                        <FormDescriptionComponent>
+                            Fill in the details of your trade. Accurate records lead to better insights.
+                        </FormDescriptionComponent>
+                    </FormHeaderComponent>
+                    <div className={cn("p-4 overflow-y-auto max-h-[80vh]")}>
+                        <TradeForm
+                            trade={editingTrade}
+                            onSaveSuccess={handleSaveSuccess}
+                            setOpen={setIsFormOpen}
+                        />
+                    </div>
+                </FormContentComponent>
+            </FormComponent>
+        </>
+    );
 });
+
 
 /**
  * The root layout component for all authenticated pages.
@@ -129,7 +108,18 @@ export default function AuthedLayout({
   return (
     <AccountProvider>
         <TradesProvider>
-            <AuthedLayoutContent>{children}</AuthedLayoutContent>
+            <TradeFormProvider>
+                <AuthGuard>
+                    <TradeFormController>
+                        <div className="flex min-h-screen w-full flex-col bg-muted/40">
+                            <Header />
+                            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+                                <MainLayout />
+                            </main>
+                        </div>
+                    </TradeFormController>
+                </AuthGuard>
+            </TradeFormProvider>
         </TradesProvider>
     </AccountProvider>
   )

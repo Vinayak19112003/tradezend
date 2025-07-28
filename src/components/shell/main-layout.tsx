@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Trade } from "@/lib/types";
@@ -23,18 +22,11 @@ const NAV_TABS = [
 ];
 
 const TabSkeleton = () => (
-    <div className="space-y-6 mt-4">
-        <Skeleton className="h-10 w-full sm:w-[470px] self-end" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-            <Skeleton className="h-[250px]" />
-            <Skeleton className="h-[250px]" />
-            <Skeleton className="h-[250px]" />
-            <Skeleton className="h-[250px]" />
-        </div>
-         <Skeleton className="h-[400px]" />
+    <div className="space-y-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-64 w-full" />
     </div>
-);
-
+)
 
 export default function MainLayout() {
     const { trades, isTradesLoading } = useTrades();

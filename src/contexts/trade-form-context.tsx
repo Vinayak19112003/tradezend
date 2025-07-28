@@ -1,11 +1,15 @@
 
 'use client';
 
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useState, ReactNode, useMemo } from 'react';
 import type { Trade } from '@/lib/types';
 
+// Define the shape of the function to open the form
+type OpenFormFunc = (trade?: Trade) => void;
+
 interface TradeFormContextType {
-  openForm: (trade?: Trade) => void;
+  openForm: OpenFormFunc;
+  setOpenFormFunction: (func: OpenFormFunc) => void;
 }
 
 const TradeFormContext = createContext<TradeFormContextType | undefined>(undefined);
@@ -13,9 +17,25 @@ const TradeFormContext = createContext<TradeFormContextType | undefined>(undefin
 export function useTradeForm() {
   const context = useContext(TradeFormContext);
   if (!context) {
-    throw new Error('useTradeForm must be used within a TradeForm provider in the layout.');
+    throw new Error('useTradeForm must be used within a TradeFormProvider');
   }
   return context;
 }
 
-export const TradeFormProvider = TradeFormContext.Provider;
+export function TradeFormProvider({ children }: { children: ReactNode }) {
+  // A "dummy" function to start with. The actual function will be set by the layout component.
+  const [openFormFunc, setOpenFormFunc] = useState<OpenFormFunc>(() => () => {
+    console.error("openForm function not yet initialized");
+  });
+
+  const value = useMemo(() => ({
+    openForm: openFormFunc,
+    setOpenFormFunction: setOpenFormFunc,
+  }), [openFormFunc]);
+
+  return (
+    <TradeFormContext.Provider value={value}>
+      {children}
+    </TradeFormContext.Provider>
+  );
+}

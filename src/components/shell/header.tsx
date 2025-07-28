@@ -19,39 +19,23 @@ import { Logo } from '../logo';
 import { AccountSwitcher } from './account-switcher';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useTrades } from '@/contexts/trades-context';
+import { usePathname } from 'next/navigation';
+import { Sidebar } from './sidebar';
 
 export const Header = React.memo(function Header() {
     const { openForm } = useTradeForm();
     const isMobile = useIsMobile();
-    const { isTradesLoading, triggerRefresh } = useTrades();
-
+    
     return (
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-            <div className='w-full flex items-center justify-between'>
-                <div className='flex items-center gap-4'>
-                    <Link
-                        href="/dashboard"
-                        className="flex items-center gap-2 text-lg font-semibold md:text-base"
-                    >
-                        <Logo />
-                        <span className="sr-only">Anony Trading</span>
-                    </Link>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                    <p className='hidden sm:block text-sm text-muted-foreground'>
-                        Welcome back
-                    </p>
-                    <div className='w-[1px] h-6 bg-border hidden sm:block'/>
-                    <div className="flex items-center gap-2">
-                        <AccountSwitcher />
-                        <Button onClick={() => openForm()} size={isMobile ? "icon" : "default"}>
-                            <PlusCircle className={cn(!isMobile && "mr-2", "h-4 w-4")} />
-                            <span className="hidden md:inline">Add Trade</span>
-                        </Button>
-                        <UserMenu />
-                    </div>
-                </div>
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+            <Sidebar />
+            <div className='ml-auto flex items-center gap-2'>
+                <AccountSwitcher />
+                <Button onClick={() => openForm()} size={isMobile ? "icon" : "default"}>
+                    <PlusCircle className={cn(!isMobile && "mr-2", "h-4 w-4")} />
+                    <span className="hidden md:inline">Add Trade</span>
+                </Button>
+                <UserMenu />
             </div>
         </header>
     );

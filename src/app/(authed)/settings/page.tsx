@@ -17,7 +17,8 @@ import { ManageAccountsCard } from '@/components/settings/manage-accounts-card';
 
 
 interface SettingsPageProps {
-  trades: any[]; // Trades prop is not used here but required by the main layout
+  // This prop is used to satisfy the page component signature in MainLayout
+  trades: never; 
 }
 
 export default function SettingsPage({ trades }: SettingsPageProps) {
