@@ -49,6 +49,7 @@ export default function RootLayout({
             <StreamerModeProvider>
                 <div className="relative min-h-screen w-full">
                     <div className="absolute inset-0 z-0 light-mode-gradient" />
+                    <div className="absolute inset-0 z-0 dark-mode-gradient" />
                     <div className="relative z-10">
                         {children}
                     </div>

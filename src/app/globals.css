@@ -75,4 +75,7 @@
         background: radial-gradient(125% 125% at 50% 90%, hsl(var(--card)) 40%, hsl(var(--primary)) 100%);
         opacity: 0.15;
     }
+    .dark .dark-mode-gradient {
+        background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(226, 232, 240, 0.15), transparent 70%);
+    }
 }
