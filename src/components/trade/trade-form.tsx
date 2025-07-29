@@ -40,7 +40,6 @@ import { AddMistakeTagDialog } from "@/components/dashboard/add-mistake-tag-dial
 import { useAssets } from "@/hooks/use-assets";
 import { AddAssetDialog } from "@/components/dashboard/add-asset-dialog";
 import { useStrategies } from "@/hooks/use-strategies";
-import { AddStrategyDialog } from "@/components/dashboard/add-strategy-dialog";
 import { useTradingRules } from "@/hooks/use-trading-rules";
 import { AddTradingRuleDialog } from "@/components/dashboard/add-trading-rule-dialog";
 import { useAuth } from "@/hooks/use-auth";
@@ -446,21 +445,18 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Strategy</FormLabel>
-                 <div className="flex items-center gap-2">
-                    <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Select a strategy" />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        {strategies.map(strategy => (
-                            <SelectItem key={strategy} value={strategy}>{strategy}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                    <AddStrategyDialog />
-                </div>
+                <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                    <SelectTrigger>
+                    <SelectValue placeholder="Select a strategy" />
+                    </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                    {strategies.map(strategy => (
+                        <SelectItem key={strategy} value={strategy}>{strategy}</SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
