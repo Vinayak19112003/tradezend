@@ -68,8 +68,23 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* This is the key to the seamless animation.
+    The @property rule tells the browser that '--angle' is a custom property
+    of type <angle>. This allows the browser to smoothly interpolate it
+    during animations, preventing the "jump" at the end of the loop.
+  */
+  @property --angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
 }
 
 @layer utilities {
-    /* Removed old gradient styles */
+    @keyframes shimmer-spin {
+      to {
+        --angle: 360deg;
+      }
+    }
 }
