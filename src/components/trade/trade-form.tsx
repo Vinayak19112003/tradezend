@@ -9,7 +9,6 @@ import { format, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -34,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { type Trade, TradeSchema, type TradingModel } from "@/lib/types";
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMistakeTags } from "@/hooks/use-mistake-tags";
 import { AddMistakeTagDialog } from "@/components/dashboard/add-mistake-tag-dialog";
@@ -55,6 +54,8 @@ import { useTrades } from "@/contexts/trades-context";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
 import { useTradingModel, type ModelSection } from "@/hooks/use-trading-model";
 import { useAccountContext } from "@/contexts/account-context";
+import { MultiSelect, type MultiSelectOption } from "../ui/multi-select";
+import { Checkbox } from "../ui/checkbox";
 
 const FormSchema = TradeSchema.omit({ id: true }).extend({
     screenshotFile: z.instanceof(File).optional(),
@@ -124,10 +125,10 @@ export function TradeForm({
   const { isStreamerMode } = useStreamerMode();
 
   const { addTrade, updateTrade } = useTrades();
-  const { strategies, addStrategy, deleteStrategy } = useStrategies();
-  const { tradingRules, addTradingRule, deleteTradingRule } = useTradingRules();
-  const { mistakeTags, addMistakeTag, deleteMistakeTag } = useMistakeTags();
-  const { assets, addAsset, deleteAsset } = useAssets();
+  const { strategies } = useStrategies();
+  const { tradingRules } = useTradingRules();
+  const { mistakeTags } = useMistakeTags();
+  const { assets } = useAssets();
   const { model: tradingModel } = useTradingModel();
   const { accounts, selectedAccountId } = useAccountContext();
 
@@ -136,7 +137,6 @@ export function TradeForm({
     defaultValues: trade
       ? { 
           ...trade,
-          accountId: trade.accountId,
           rr: trade.rr ?? 0,
           confidence: trade.confidence ?? 5,
           accountSize: trade.accountSize ?? 0,
@@ -154,9 +154,6 @@ export function TradeForm({
           entryReason: trade.entryReason ?? "",
           tradeFeelings: trade.tradeFeelings ?? "",
           lossAnalysis: trade.lossAnalysis ?? "",
-          session: trade.session,
-          keyLevel: trade.keyLevel ?? "",
-          entryTimeFrame: trade.entryTimeFrame,
         }
       : {
           accountId: selectedAccountId || '',
@@ -193,7 +190,7 @@ export function TradeForm({
         },
   });
 
-  const { watch, setValue } = form;
+  const { watch, setValue, control } = form;
   const entryPrice = watch("entryPrice");
   const sl = watch("sl");
   const exitPrice = watch("exitPrice");
@@ -247,11 +244,6 @@ export function TradeForm({
     const rRatio = parseFloat(rr as any);
     const tradeResult = result;
     
-    // This effect should only run if the user hasn't manually edited the PNL.
-    // However, since we're making PNL always editable, we can comment this out
-    // or add a flag to check if PNL was manually set. For simplicity, we'll allow override.
-    // A more advanced implementation might use a state `const [isPnlManuallySet, setIsPnlManuallySet] = useState(false)`
-
     if (!isNaN(size) && size > 0 && !isNaN(riskPercent) && riskPercent > 0) {
         const riskAmount = size * (riskPercent / 100);
         let calculatedPnl = 0;
@@ -264,6 +256,13 @@ export function TradeForm({
     }
 }, [accountSize, riskPercentage, rr, result, setValue]);
 
+const mistakeOptions = useMemo((): MultiSelectOption[] => 
+    mistakeTags.map((tag, index) => ({ id: index, name: tag, value: tag })), 
+[mistakeTags]);
+
+const ruleOptions = useMemo((): MultiSelectOption[] => 
+    tradingRules.map((rule, index) => ({ id: index, name: rule, value: rule })),
+[tradingRules]);
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setIsSaving(true);
@@ -435,7 +434,7 @@ export function TradeForm({
                         ))}
                       </SelectContent>
                     </Select>
-                    <AddAssetDialog assets={assets} addAsset={addAsset} deleteAsset={deleteAsset}/>
+                    <AddAssetDialog />
                 </div>
                 <FormMessage />
               </FormItem>
@@ -460,7 +459,7 @@ export function TradeForm({
                         ))}
                     </SelectContent>
                     </Select>
-                    <AddStrategyDialog strategies={strategies} addStrategy={addStrategy} deleteStrategy={deleteStrategy}/>
+                    <AddStrategyDialog />
                 </div>
                 <FormMessage />
               </FormItem>
@@ -818,120 +817,52 @@ export function TradeForm({
         </Accordion>
 
         <FormField
-          control={form.control}
-          name="rulesFollowed"
-          render={() => (
-            <FormItem>
-              <div className="mb-4">
-                <div className="flex items-center gap-2">
-                   <FormLabel className="text-base">Rules Followed</FormLabel>
-                   <AddTradingRuleDialog 
-                    tradingRules={tradingRules}
-                    addTradingRule={addTradingRule}
-                    deleteTradingRule={deleteTradingRule}
-                   />
+            control={control}
+            name="rulesFollowed"
+            render={({ field }) => (
+                <FormItem>
+                <div className="mb-4 flex items-center justify-between">
+                    <div>
+                        <FormLabel className="text-base">Rules Followed</FormLabel>
+                        <FormDescription>
+                          Check all the general rules you followed for this trade.
+                        </FormDescription>
+                    </div>
+                    <AddTradingRuleDialog />
                 </div>
-                <FormDescription>
-                  Check all the general rules you followed for this trade.
-                </FormDescription>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {tradingRules.map((item) => (
-                  <FormField
-                    key={item}
-                    control={form.control}
-                    name="rulesFollowed"
-                    render={({ field }) => {
-                      return (
-                        <FormItem
-                          key={item}
-                          className="flex flex-row items-start space-x-3 space-y-0"
-                        >
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(item)}
-                              onCheckedChange={(checked) => {
-                                const currentValues = field.value || [];
-                                return checked
-                                  ? field.onChange([...currentValues, item])
-                                  : field.onChange(
-                                      currentValues.filter(
-                                        (value) => value !== item
-                                      )
-                                    );
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            {item}
-                          </FormLabel>
-                        </FormItem>
-                      );
-                    }}
-                  />
-                ))}
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
+                <MultiSelect
+                    options={ruleOptions}
+                    selected={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select rules..."
+                />
+                <FormMessage />
+                </FormItem>
+            )}
         />
         
         <Separator />
         
         <FormField
-          control={form.control}
+          control={control}
           name="mistakes"
-          render={() => (
+          render={({ field }) => (
             <FormItem>
-              <div className="mb-4">
-                <div className="flex items-center gap-2">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
                    <FormLabel className="text-base">Mistakes Made</FormLabel>
-                   <AddMistakeTagDialog 
-                    mistakeTags={mistakeTags}
-                    addMistakeTag={addMistakeTag}
-                    deleteMistakeTag={deleteMistakeTag}
-                   />
+                    <FormDescription>
+                    Select any mistakes you made during this trade.
+                    </FormDescription>
                 </div>
-                <FormDescription>
-                  Select any mistakes you made during this trade.
-                </FormDescription>
+                <AddMistakeTagDialog />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {mistakeTags.map((item) => (
-                  <FormField
-                    key={item}
-                    control={form.control}
-                    name="mistakes"
-                    render={({ field }) => {
-                      return (
-                        <FormItem
-                          key={item}
-                          className="flex flex-row items-start space-x-3 space-y-0"
-                        >
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(item)}
-                              onCheckedChange={(checked) => {
-                                const currentValues = field.value || [];
-                                return checked
-                                  ? field.onChange([...currentValues, item])
-                                  : field.onChange(
-                                      currentValues.filter(
-                                        (value) => value !== item
-                                      )
-                                    );
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            {item}
-                          </FormLabel>
-                        </FormItem>
-                      );
-                    }}
-                  />
-                ))}
-              </div>
+                <MultiSelect
+                    options={mistakeOptions}
+                    selected={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select mistakes..."
+                />
               <FormMessage />
             </FormItem>
           )}
