@@ -16,8 +16,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PlusCircle, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStrategies } from "@/hooks/use-strategies";
+import AnimatedList from "../ui/animated-list";
+import { cn } from "@/lib/utils";
 
 export function AddStrategyDialog() {
   const { strategies, addStrategy, deleteStrategy, isLoaded } = useStrategies();
@@ -45,7 +46,8 @@ export function AddStrategyDialog() {
     setIsLoading(false);
   };
 
-  const handleDelete = async (strategy: string) => {
+  const handleDelete = async (e: React.MouseEvent, strategy: string) => {
+    e.stopPropagation();
     setIsLoading(true);
     await deleteStrategy(strategy);
     setIsLoading(false);
@@ -68,21 +70,23 @@ export function AddStrategyDialog() {
         </DialogHeader>
         <div className="grid gap-4 py-4">
             <h4 className="font-medium text-sm">Existing Strategies</h4>
-            <ScrollArea className="h-40 w-full rounded-md border p-2">
-                {isLoaded && strategies.length > 0 ? (
-                    strategies.map(strategy => (
-                        <div key={strategy} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
-                            <span className="text-sm font-medium">{strategy}</span>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(strategy)} disabled={isLoading}>
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">Delete {strategy}</span>
-                            </Button>
-                        </div>
-                    ))
-                ) : (
-                    <p className="text-sm text-muted-foreground text-center p-4">No custom strategies yet.</p>
+             <AnimatedList
+                items={strategies}
+                renderItem={(strategy, index, isSelected) => (
+                    <div className={cn("item", isSelected && "selected")}>
+                        <p className="item-text">{strategy}</p>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={(e) => handleDelete(e, strategy)}
+                            disabled={isLoading}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
                 )}
-            </ScrollArea>
+             />
         </div>
         <div className="grid gap-2">
             <h4 className="font-medium text-sm">Add New Strategy</h4>
