@@ -156,35 +156,25 @@ export function UserMenu() {
           <Settings className="mr-3 h-4 w-4 text-zinc-500" />
           Settings
         </DropdownMenuItem>
-
-        <DropdownMenuSub
-            trigger={
-                 <DropdownMenuItem className="justify-between">
-                    <div className="flex items-center">
-                        <Monitor className="mr-3 h-4 w-4 text-zinc-500" />
-                        Theme
-                    </div>
-                    <span>▶</span>
-                </DropdownMenuItem>
-            }
-        >
-            <DropdownMenuItem onClick={() => setTheme('light')}>
-                <Sun className="mr-3 h-4 w-4 text-zinc-500" /> Light
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme('dark')}>
-                <Moon className="mr-3 h-4 w-4 text-zinc-500" /> Dark
-            </DropdownMenuItem>
-             <DropdownMenuItem onClick={() => setTheme('system')}>
-                <Settings className="mr-3 h-4 w-4 text-zinc-500" /> System
-            </DropdownMenuItem>
-        </DropdownMenuSub>
-
-
+        
         <DropdownMenuItem onClick={toggleStreamerMode}>
             <Tv className="mr-3 h-4 w-4 text-zinc-500" />
             Streamer Mode: {isStreamerMode ? 'On' : 'Off'}
         </DropdownMenuItem>
       </div>
+
+      <DropdownMenuSeparator />
+
+        <div className="py-1">
+            <div className="px-3 py-1 text-xs font-medium text-zinc-500">Theme</div>
+             <DropdownMenuItem onClick={() => setTheme('light')}>
+                <Sun className="mr-3 h-4 w-4 text-zinc-500" /> Light
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme('dark')}>
+                <Moon className="mr-3 h-4 w-4 text-zinc-500" /> Dark
+            </DropdownMenuItem>
+        </div>
+
 
       <DropdownMenuSeparator />
 
