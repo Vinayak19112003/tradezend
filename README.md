@@ -1,13 +1,13 @@
 
 # Anony Trading - A Modern Journal for Professionals
 
-![Anony Trading Dashboard](https://firebasestorage.googleapis.com/v0/b/tradevision-journal-pss69.appspot.com/o/readme%2Fanony-trading-screenshot.png?alt=media&token=8679f2ba-20a2-474c-8f4f-6962f3f7ca2b)
+![Anony Trading Dashboard](https://firebasestorage.googleapis.com/v0/b/tradevision-journal-pss69.appspot.com/o/readme%2Fanony-trading-new-ui.png?alt=media&token=db2a99e7-4940-424a-b50a-3139369d76c6)
 
 ## Overview
 
 Anony Trading is a sophisticated and modern trading journal designed for professionals who want to elevate their performance through detailed record-keeping and intelligent analysis. It provides a comprehensive suite of tools to log, review, and analyze trades, helping users identify patterns, refine strategies, and maintain discipline.
 
-The journal is built with a focus on data-driven insights, psychological analysis, and a clean, intuitive user interface.
+The journal is built with a focus on data-driven insights, psychological analysis, and a clean, intuitive user interface featuring a rich, royal color palette and dynamic components.
 
 ---
 
@@ -16,7 +16,8 @@ The journal is built with a focus on data-driven insights, psychological analysi
 The application is organized into a primary tab-based interface for a seamless workflow.
 
 ### 1. Dashboard Tab
-The main landing page, providing a high-level, at-a-glance overview of your trading performance.
+The main landing page, providing a high-level overview of your trading performance.
+- **Magic Bento Grid**: An interactive, animated grid serves as the primary navigation hub, offering a unique and engaging user experience.
 - **Summary Banner**: Displays progress towards monthly profit/loss targets and highlights the most common mistake for the current month.
 - **Key Performance Indicators (KPIs)**: A series of cards showing vital statistics like Total PNL, Win Rate, and Net R for the selected time period.
 - **Monthly Calendar**: A visual, color-coded calendar showing daily profitability, allowing for quick identification of winning and losing days.
@@ -46,18 +47,24 @@ A page focused on advanced risk and return metrics, broken down into sub-section
 A centralized hub for managing your account and application preferences.
 - **User Profile**: Displays user email and provides a logout option.
 - **Account Management**: Add, edit, or remove different trading accounts.
+- **Strategy Management**: Manage your custom list of trading strategies.
 - **Preferences**: Customize the app theme (Light/Dark), currency format (USD/INR), and toggle Streamer Mode to hide sensitive financial data.
 - **Security**: Allows users to request a password reset link.
 
 ---
 
-## AI-Powered Features
+## Modern UI & AI-Powered Features
 
+### Generative AI
 This application leverages Generative AI (via Google's Gemini model and Genkit) to provide intelligent assistance.
-
 - **AI Trade Import (`/ai/flows/import-trades-flow.ts`)**: This AI flow can understand and parse various file formats (CSV, PDF, images) to extract structured trade data, saving significant manual entry time. It intelligently maps fields and handles missing data.
-
 - **AI Pattern Detection (`/ai/flows/pattern-detection.ts`)**: This flow acts as a trading psychologist, analyzing journal notes and psychological data to identify behavioral patterns, emotional correlations, and actionable insights to improve performance.
+
+### Dynamic Components
+The UI is enhanced with custom, visually appealing components to create a premium user experience.
+- **Magic Bento Grid**: A reactive, animated grid with spotlight and particle effects for navigation.
+- **Shimmer Button**: A primary action button with an animated, glowing border effect to draw attention.
+- **Animated Lists**: Data lists that animate on scroll, providing a smooth and modern feel when managing items like strategies.
 
 ---
 
@@ -65,7 +72,7 @@ This application leverages Generative AI (via Google's Gemini model and Genkit) 
 
 - **Framework**: Next.js (with App Router)
 - **Language**: TypeScript
-- **UI Components**: ShadCN UI
+- **UI Components**: ShadCN UI, Framer Motion
 - **Styling**: Tailwind CSS
 - **Database & Auth**: Firebase (Firestore, Firebase Auth, Storage)
 - **Generative AI**: Genkit (with Google's Gemini models)
