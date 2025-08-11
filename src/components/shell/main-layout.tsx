@@ -64,14 +64,16 @@ export default function MainLayout() {
         <Tabs value={activeTab} onValueChange={handleTabChange}>
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight font-headline capitalize">{activeTab}</h1>
-                <TabsList className="hidden sm:flex">
-                    {NAV_TABS.map(tab => (
-                        <TabsTrigger key={tab.value} value={tab.value} className="gap-2">
-                           <tab.icon className="h-4 w-4" />
-                           {tab.label}
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
+                <div className="hidden sm:block">
+                    <TabsList>
+                        {NAV_TABS.map(tab => (
+                            <TabsTrigger key={tab.value} value={tab.value} className="gap-2">
+                               <tab.icon className="h-4 w-4" />
+                               {tab.label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </div>
             </div>
             
             <TabsContent value={activeTab} forceMount className="mt-4">
