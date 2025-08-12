@@ -30,12 +30,28 @@ const TRADES_COLLECTION = 'trades';
 const ACCOUNTS_COLLECTION = 'settings';
 const ACCOUNTS_DOC_ID = 'userConfig'; 
 
+/**
+ * Removes properties with `undefined` values from an object.
+ * Firestore does not support `undefined`.
+ * @param obj The object to clean.
+ * @returns A new object with `undefined` properties removed.
+ */
+const cleanupTradeData = (obj: any) => {
+    const newObj: any = {};
+    for (const key in obj) {
+        if (obj[key] !== undefined) {
+            newObj[key] = obj[key];
+        }
+    }
+    return newObj;
+};
+
 interface TradesContextType {
     trades: Trade[];
     isTradesLoading: boolean;
-    addTrade: (trade: Omit<Trade, 'id'>) => Promise<boolean>;
+    addTrade: (trade: Omit<Trade, 'id'>) => Promise<void>;
     addMultipleTrades: (newTrades: Omit<Trade, 'id'>[]) => Promise<{success: boolean, addedCount: number}>;
-    updateTrade: (trade: Trade) => Promise<boolean>;
+    updateTrade: (trade: Trade) => Promise<void>;
     deleteTrade: (id: string) => Promise<boolean>;
     deleteAllTrades: (accountId: string) => Promise<boolean>;
     triggerRefresh: () => void;
@@ -140,13 +156,12 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                     transaction.update(accountsDocRef, { accounts: updatedAccounts });
                 }
                 
+                const cleanedTrade = cleanupTradeData(trade);
                 transaction.set(newTradeRef, {
-                    ...trade,
+                    ...cleanedTrade,
                     date: Timestamp.fromDate(trade.date),
                 });
             });
-
-            return true;
         } catch (error: any) {
             console.error("Error adding trade:", error);
             // Re-throw the error so the form can catch it and display it.
@@ -162,7 +177,8 @@ export function TradesProvider({ children }: { children: ReactNode }) {
             newTrades.forEach(trade => {
                 const docRef = doc(tradesCollection);
                 const tradeWithDateObject = { ...trade, date: new Date(trade.date) };
-                batch.set(docRef, { ...tradeWithDateObject, date: Timestamp.fromDate(tradeWithDateObject.date) });
+                const cleanedTrade = cleanupTradeData(tradeWithDateObject);
+                batch.set(docRef, { ...cleanedTrade, date: Timestamp.fromDate(cleanedTrade.date) });
             });
 
             await batch.commit();
@@ -217,13 +233,12 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                 }
                 
                 const { id, ...tradeData } = trade;
+                const cleanedTrade = cleanupTradeData(tradeData);
                 transaction.update(tradeRef, {
-                    ...tradeData,
+                    ...cleanedTrade,
                     date: Timestamp.fromDate(trade.date),
                 });
             });
-
-            return true;
         } catch (error: any) {
             console.error("Error updating trade:", error);
             throw error;
@@ -268,6 +283,7 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                 transaction.delete(tradeRef);
              });
 
+            toast({ title: "Trade Deleted", description: "The trade has been removed from your log." });
             return true;
         } catch (error: any) {
             console.error("Error deleting trade:", error);
