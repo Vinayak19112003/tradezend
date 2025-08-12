@@ -11,7 +11,6 @@ import dynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Trade } from "@/lib/types";
 import { useTradingRules } from "@/hooks/use-trading-rules";
-import { Separator } from '@/components/ui/separator';
 
 // Dynamically import tab content
 const RiskAnalysisTab = dynamic(() => import('@/components/performance/risk-analysis-tab'), { ssr: false, loading: () => <TabSkeleton /> });
@@ -38,25 +37,11 @@ interface PerformancePageProps {
 export default function PerformancePage({ trades }: PerformancePageProps) {
     const { tradingRules } = useTradingRules();
     
-    // The component now receives all trades as a prop, so no internal fetching is needed.
-
     return (
-        <div className="flex flex-col gap-4 md:gap-6">
-            <section>
-                <PsychologyTab trades={trades} tradingRules={tradingRules} />
-            </section>
-            
-            <Separator />
-
-            <section>
-                <RiskAnalysisTab trades={trades} />
-            </section>
-
-            <Separator />
-            
-            <section>
-                 <TimeAnalysisTab trades={trades} />
-            </section>
+        <div className="space-y-6">
+            <PsychologyTab trades={trades} tradingRules={tradingRules} />
+            <RiskAnalysisTab trades={trades} />
+            <TimeAnalysisTab trades={trades} />
         </div>
     );
 }
