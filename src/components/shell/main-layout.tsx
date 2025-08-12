@@ -67,8 +67,7 @@ export default function MainLayout() {
                 <div className="hidden sm:block">
                     <TabsList>
                         {NAV_TABS.map(tab => (
-                            <TabsTrigger key={tab.value} value={tab.value} className="gap-2">
-                               <tab.icon className="h-4 w-4" />
+                            <TabsTrigger key={tab.value} value={tab.value}>
                                {tab.label}
                             </TabsTrigger>
                         ))}
