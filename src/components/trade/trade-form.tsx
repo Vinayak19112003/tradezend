@@ -348,19 +348,14 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
         };
         delete (tradeData as any).screenshotFile;
         
-        let success = false;
         if (trade) {
-            success = await updateTrade({ ...tradeData, id: trade.id });
+            await updateTrade({ ...tradeData, id: trade.id });
         } else {
-            success = await addTrade(tradeData);
+            await addTrade(tradeData);
         }
         
-        if (success) {
-            toast({ title: "Trade Saved!", description: "Your trade has been successfully logged." });
-            onSaveSuccess();
-        } else {
-            throw new Error("Failed to save trade to the database.");
-        }
+        toast({ title: "Trade Saved!", description: "Your trade has been successfully logged." });
+        onSaveSuccess();
 
     } catch (error) {
         console.error("Trade save/upload failed:", error);

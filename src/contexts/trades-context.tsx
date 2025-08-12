@@ -113,7 +113,9 @@ export function TradesProvider({ children }: { children: ReactNode }) {
     const addTrade = useCallback(async (trade: Omit<Trade, 'id'>) => {
         const tradesCollection = getTradesCollectionRef();
         const accountsDocRef = getAccountsDocRef();
-        if (!tradesCollection || !accountsDocRef) return false;
+        if (!tradesCollection || !accountsDocRef) {
+            throw new Error("User is not authenticated.");
+        }
 
         try {
             await runTransaction(db, async (transaction) => {
@@ -128,7 +130,7 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                     const accountIndex = accounts.findIndex((acc: any) => acc.id === trade.accountId);
                     
                     if (accountIndex === -1) {
-                        throw new Error(`Account with ID ${trade.accountId} not found. Trade will not be saved.`);
+                        throw new Error(`Account with ID ${trade.accountId} not found. Please select a valid account.`);
                     };
 
                     const updatedAccounts = [...accounts];
@@ -147,10 +149,10 @@ export function TradesProvider({ children }: { children: ReactNode }) {
             return true;
         } catch (error: any) {
             console.error("Error adding trade:", error);
-            toast({ variant: "destructive", title: "Error Saving Trade", description: error.message || "Could not save the trade." });
-            return false;
+            // Re-throw the error so the form can catch it and display it.
+            throw error;
         }
-    }, [getTradesCollectionRef, getAccountsDocRef, toast]);
+    }, [getTradesCollectionRef, getAccountsDocRef]);
 
     const addMultipleTrades = useCallback(async (newTrades: Omit<Trade, 'id'>[]) => {
         const tradesCollection = getTradesCollectionRef();
@@ -181,7 +183,9 @@ export function TradesProvider({ children }: { children: ReactNode }) {
     const updateTrade = useCallback(async (trade: Trade) => {
         const tradesCollection = getTradesCollectionRef();
         const accountsDocRef = getAccountsDocRef();
-        if (!tradesCollection || !accountsDocRef || !trade.id) return false;
+        if (!tradesCollection || !accountsDocRef || !trade.id) {
+            throw new Error("User is not authenticated.");
+        };
 
         try {
             const tradeRef = doc(tradesCollection, trade.id);
@@ -222,10 +226,9 @@ export function TradesProvider({ children }: { children: ReactNode }) {
             return true;
         } catch (error: any) {
             console.error("Error updating trade:", error);
-            toast({ variant: "destructive", title: "Error Updating Trade", description: error.message || "Could not update the trade." });
-            return false;
+            throw error;
         }
-    }, [getTradesCollectionRef, getAccountsDocRef, toast]);
+    }, [getTradesCollectionRef, getAccountsDocRef]);
 
     const deleteTrade = useCallback(async (id: string) => {
         const tradesCollection = getTradesCollectionRef();
