@@ -109,7 +109,7 @@ export const DrawdownAnalysis = memo(function DrawdownAnalysis({ trades }: Drawd
           <Skeleton className="h-full w-full" />
         ) : data.length > 1 ? (
           <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+              <AreaChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 20 }}>
                 <defs>
                     <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={fillColor} stopOpacity={0.4}/>
@@ -118,7 +118,7 @@ export const DrawdownAnalysis = memo(function DrawdownAnalysis({ trades }: Drawd
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                 <XAxis dataKey="tradeNumber" stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} label={{ value: 'Trade #', position: 'insideBottom', offset: -5, fill: tickColor, fontSize: 12 }} />
-                <YAxis stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} domain={['auto', 'auto']} label={{ value: 'R Value', angle: -90, position: 'insideLeft', fill: tickColor, fontSize: 12, dy: 40 }} />
+                <YAxis stroke={tickColor} fontSize={12} tickLine={false} axisLine={false} domain={['auto', 'auto']} allowDataOverflow={false} padding={{ top: 20, bottom: 20 }} label={{ value: 'R Value', angle: -90, position: 'insideLeft', fill: tickColor, fontSize: 12, dy: 40 }} />
                 <Tooltip
                   cursor={{ strokeDasharray: '3 3' }}
                   contentStyle={{
