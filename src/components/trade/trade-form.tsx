@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, ImagePlus, X, Upload, Trash2 } from "lucide-react";
 import { format, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { type Trade, TradeSchema, type TradingModel } from "@/lib/types";
-import { useEffect, useState, type Dispatch, type SetStateAction, useMemo } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction, useMemo, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMistakeTags } from "@/hooks/use-mistake-tags";
 import { AddMistakeTagDialog } from "@/components/dashboard/add-mistake-tag-dialog";
@@ -55,6 +55,7 @@ import { useTradingModel, type ModelSection } from "@/hooks/use-trading-model";
 import { useAccountContext } from "@/contexts/account-context";
 import { MultiSelect, type MultiSelectOption } from "../ui/multi-select";
 import { Checkbox } from "../ui/checkbox";
+import { useImageUpload } from "@/hooks/use-image-upload";
 
 const FormSchema = TradeSchema.omit({ id: true }).extend({
     screenshotFile: z.instanceof(File).optional(),
@@ -200,6 +201,61 @@ export function TradeForm({
   const accountId = watch("accountId");
   const direction = watch("direction");
 
+  const {
+    previewUrl,
+    fileInputRef,
+    handleThumbnailClick,
+    handleFileChange: handleUploaderFileChange,
+    handleRemove,
+  } = useImageUpload({
+    onUpload: (file) => {
+        setValue('screenshotFile', file);
+    },
+    onRemove: () => {
+        setValue('screenshotFile', undefined);
+        setValue('screenshotURL', '');
+    },
+    initialUrl: trade?.screenshotURL
+  });
+
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const file = e.dataTransfer.files?.[0];
+      if (file && file.type.startsWith("image/")) {
+        const fakeEvent = {
+          target: {
+            files: [file],
+          },
+        } as React.ChangeEvent<HTMLInputElement>;
+        handleUploaderFileChange(fakeEvent);
+      }
+    },
+    [handleUploaderFileChange],
+  );
+
   // Set account size when account changes or when editing a trade
   useEffect(() => {
     if (trade) {
@@ -281,6 +337,9 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
             const fileRef = storageRef(storage, filePath);
             await uploadBytes(fileRef, file);
             screenshotURL = await getDownloadURL(fileRef);
+        } else if (previewUrl === null) {
+            // Handle case where existing image was removed
+            screenshotURL = "";
         }
 
         const tradeData = {
@@ -898,36 +957,84 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
             </FormItem>
           )}
         />
-        
+
         <FormField
             control={form.control}
             name="screenshotFile"
-            render={({ field: { onChange, value, ...rest } }) => (
+            render={() => (
                 <FormItem>
-                <FormLabel>Screenshot</FormLabel>
-                {trade?.screenshotURL && !value && (
-                    <div className="relative h-24 w-40 rounded-md overflow-hidden">
-                        <Image src={trade.screenshotURL} alt="Current screenshot" layout="fill" objectFit="cover" />
-                    </div>
-                )}
-                <FormControl>
-                    <Input 
-                        type="file" 
+                    <FormLabel>Screenshot</FormLabel>
+                    <Input
+                        type="file"
                         accept="image/*"
-                        onChange={(e) => {
-                            if (e.target.files && e.target.files.length > 0) {
-                                onChange(e.target.files[0]);
-                            }
-                        }}
+                        className="hidden"
+                        ref={fileInputRef}
+                        onChange={handleUploaderFileChange}
                     />
-                </FormControl>
-                <FormDescription>
-                    Upload an image of your trade setup or result.
-                </FormDescription>
-                <FormMessage />
+                    {!previewUrl ? (
+                        <div
+                        onClick={handleThumbnailClick}
+                        onDragOver={handleDragOver}
+                        onDragEnter={handleDragEnter}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={cn(
+                            "flex h-48 cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 transition-colors hover:bg-muted",
+                            isDragging && "border-primary/50 bg-primary/5",
+                        )}
+                        >
+                        <div className="rounded-full bg-background p-3 shadow-sm">
+                            <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div className="text-center">
+                            <p className="text-sm font-medium">Click to select</p>
+                            <p className="text-xs text-muted-foreground">
+                            or drag and drop file here
+                            </p>
+                        </div>
+                        </div>
+                    ) : (
+                        <div className="relative">
+                        <div className="group relative h-48 overflow-hidden rounded-lg border">
+                            <Image
+                            src={previewUrl}
+                            alt="Preview"
+                            fill
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100" />
+                            <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={handleThumbnailClick}
+                                className="h-9 w-9 p-0"
+                                type="button"
+                            >
+                                <Upload className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={handleRemove}
+                                className="h-9 w-9 p-0"
+                                type="button"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                            </div>
+                        </div>
+                        </div>
+                    )}
+                     <FormDescription>
+                        Upload an image of your trade setup or result.
+                    </FormDescription>
+                    <FormMessage />
                 </FormItem>
             )}
         />
+
 
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
