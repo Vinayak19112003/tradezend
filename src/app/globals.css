@@ -26,7 +26,7 @@
     --border: 220 15% 88%; /* Gray tint for borders */
     --input: 220 15% 88%;
     --ring: 262.1 80% 55%;
-    --radius: 0.5rem;
+    --radius: 1rem;
     --chart-1: 262 80% 56%;
     --chart-2: 180 70% 50%;
     --chart-3: 340 82% 56%;
@@ -35,29 +35,29 @@
   }
 
   .dark {
-    --background: 224 71% 4%; /* Deep, dark desaturated blue */
-    --foreground: 210 40% 98%;
-    --card: 224 71% 9%; /* Slightly lighter blue for cards */
-    --card-foreground: 210 40% 98%;
-    --popover: 224 71% 4%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 262.1 83.3% 57.8%; /* Royal Purple */
+    --background: 210 48% 8%; /* #0D1117 */
+    --foreground: 0 0% 90.2%; /* #E6E6E6 */
+    --card: 214 23% 11%; /* #161B22 */
+    --card-foreground: 0 0% 90.2%; /* #E6E6E6 */
+    --popover: 210 48% 8%;
+    --popover-foreground: 0 0% 90.2%;
+    --primary: 217 91% 60%; /* #3B82F6 - Electric Blue */
     --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 224 71% 12%; /* Muted elements on the dark background */
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 224 71% 12%;
+    --muted-foreground: 0 0% 62.7%; /* #A0A0A0 */
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 72.2% 50.6%;
+    --destructive: 0 100% 64.7%; /* #FF4C4C - Crimson Red */
     --destructive-foreground: 210 40% 98%;
-    --success: 142.1 76.2% 36.3%;
-    --success-foreground: 0 0% 100%;
-    --border: 217.2 32.6% 17.5%;
+    --success: 145 100% 45.1%; /* #00E676 - Emerald Green */
+    --success-foreground: 0 0% 0%;
+    --border: 0 0% 100% / 0.05; /* rgba(255,255,255,0.05) */
     --input: 217.2 32.6% 17.5%;
-    --ring: 262.1 83.3% 57.8%;
-    --chart-1: 262 80% 56%;
-    --chart-2: 180 70% 50%;
+    --ring: 217 91% 60%;
+    --chart-1: 145 100% 45.1%;
+    --chart-2: 0 100% 64.7%;
   }
 }
 
@@ -67,6 +67,9 @@
   }
   body {
     @apply bg-background text-foreground;
+    transition-property: color, background-color;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-in-out;
   }
 
   /* This is the key to the seamless animation.
