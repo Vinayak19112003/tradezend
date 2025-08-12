@@ -5,27 +5,27 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 262.1 83.3% 57.8%; /* Royal Purple */
+    --background: 220 50% 98%; /* Soft warm neutral background */
+    --foreground: 240 10% 12%; /* Dark gray for main headings */
+    --card: 220 25% 94%; /* Slightly darker shade for cards */
+    --card-foreground: 240 10% 12%;
+    --popover: 220 25% 94%;
+    --popover-foreground: 240 10% 12%;
+    --primary: 262.1 80% 55%; /* Slightly desaturated primary */
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 215.4 16.3% 46.9%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 14% 90%; /* Gray tint for secondary elements */
+    --secondary-foreground: 240 5% 35%; /* Softer body text color */
+    --muted: 220 14% 90%;
+    --muted-foreground: 240 5% 45%; /* Softer muted text color */
+    --accent: 220 14% 90%;
+    --accent-foreground: 240 10% 12%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --success: 142.1 76.2% 36.3%;
     --success-foreground: 0 0% 100%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 262.1 83.3% 57.8%;
+    --border: 220 15% 88%; /* Gray tint for borders */
+    --input: 220 15% 88%;
+    --ring: 262.1 80% 55%;
     --radius: 0.5rem;
     --chart-1: 262 80% 56%;
     --chart-2: 180 70% 50%;
