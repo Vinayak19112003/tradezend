@@ -23,7 +23,7 @@
     --destructive-foreground: 210 40% 98%;
     --success: 142.1 76.2% 36.3%;
     --success-foreground: 0 0% 100%;
-    --border: 220 15% 88%; /* Gray tint for borders */
+    --border: 0 0% 100% / 0.05; /* rgba(255,255,255,0.05) */
     --input: 220 15% 88%;
     --ring: 262.1 80% 55%;
     --radius: 1rem;
