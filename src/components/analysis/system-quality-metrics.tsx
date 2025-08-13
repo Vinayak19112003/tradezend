@@ -2,7 +2,8 @@
 "use client";
 
 import { useMemo, memo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InteractiveCard } from "@/components/ui/interactive-card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type Trade } from "@/lib/types";
 import { StreamerModeText } from "@/components/streamer-mode-text";
 import { cn } from "@/lib/utils";
@@ -51,7 +52,7 @@ export default memo(function SystemQualityMetrics({ trades }: { trades: Trade[] 
     }, [trades]);
 
     return (
-        <Card>
+        <InteractiveCard>
             <CardHeader>
                 <CardTitle>System Quality Metrics</CardTitle>
             </CardHeader>
@@ -61,6 +62,6 @@ export default memo(function SystemQualityMetrics({ trades }: { trades: Trade[] 
                 <StatItem label="Consistency Score" value={stats.consistencyScore} />
                 <StatItem label="Total Trades" value={stats.totalTrades} />
             </CardContent>
-        </Card>
+        </InteractiveCard>
     );
 });

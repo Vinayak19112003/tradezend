@@ -2,7 +2,8 @@
 "use client";
 
 import { useMemo, memo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InteractiveCard } from "@/components/ui/interactive-card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type Trade } from "@/lib/types";
 import { StreamerModeText } from "@/components/streamer-mode-text";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,7 @@ export default memo(function RiskRewardMetrics({ trades }: { trades: Trade[] }) 
     }, [trades]);
 
     return (
-        <Card>
+        <InteractiveCard>
             <CardHeader>
                 <CardTitle>Risk & Reward Metrics</CardTitle>
             </CardHeader>
@@ -57,6 +58,6 @@ export default memo(function RiskRewardMetrics({ trades }: { trades: Trade[] }) 
                 <StatItem label="Risk/Reward Ratio" value={stats.riskRewardRatio} />
                 <StatItem label="Expectancy" value={stats.expectancy} valueClassName={stats.expectancy.startsWith('-') ? "text-destructive" : "text-success"}/>
             </CardContent>
-        </Card>
+        </InteractiveCard>
     );
 });

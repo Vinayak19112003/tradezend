@@ -2,7 +2,8 @@
 "use client";
 
 import { useMemo, memo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InteractiveCard } from "@/components/ui/interactive-card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type Trade } from "@/lib/types";
 import { StreamerModeText } from "@/components/streamer-mode-text";
 import { cn } from "@/lib/utils";
@@ -85,7 +86,7 @@ export default memo(function CoreMetrics({ trades }: { trades: Trade[] }) {
     }, [trades]);
 
     return (
-        <Card>
+        <InteractiveCard>
             <CardHeader>
                 <CardTitle>Core Metrics</CardTitle>
             </CardHeader>
@@ -99,6 +100,6 @@ export default memo(function CoreMetrics({ trades }: { trades: Trade[] }) {
                 <StatItem label="Avg. Trades Per Day" value={stats.avgTradesPerDay} />
                 <StatItem label="Avg. Trade Duration" value={stats.avgTradeDuration} />
             </CardContent>
-        </Card>
+        </InteractiveCard>
     );
 });

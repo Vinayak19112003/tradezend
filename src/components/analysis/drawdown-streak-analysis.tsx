@@ -2,7 +2,8 @@
 "use client";
 
 import { useMemo, memo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InteractiveCard } from "@/components/ui/interactive-card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type Trade } from "@/lib/types";
 import { StreamerModeText } from "@/components/streamer-mode-text";
 import { cn } from "@/lib/utils";
@@ -77,7 +78,7 @@ export default memo(function DrawdownStreakAnalysis({ trades }: { trades: Trade[
     }, [trades]);
 
     return (
-        <Card>
+        <InteractiveCard>
             <CardHeader>
                 <CardTitle>Drawdown & Streak Analysis</CardTitle>
             </CardHeader>
@@ -87,6 +88,6 @@ export default memo(function DrawdownStreakAnalysis({ trades }: { trades: Trade[
                 <StatItem label="Longest Win Streak" value={`${stats.longestWinStreak} trades`} valueClassName="text-success" />
                 <StatItem label="Longest Loss Streak" value={`${stats.longestLossStreak} trades`} valueClassName="text-destructive" />
             </CardContent>
-        </Card>
+        </InteractiveCard>
     );
 });
