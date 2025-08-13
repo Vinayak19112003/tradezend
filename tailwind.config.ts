@@ -91,10 +91,15 @@ export default {
             height: '0',
           },
         },
+        'glow': {
+            '0%': { 'background-position': '0% 50%' },
+            '100%': { 'background-position': '-200% 50%' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'glow': 'glow 5s linear infinite',
       },
     },
   },
