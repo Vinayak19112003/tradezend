@@ -26,8 +26,10 @@ import { CSS } from '@dnd-kit/utilities';
  * A sortable and editable checklist item component.
  * It uses dnd-kit for drag-and-drop reordering.
  */
-const SortableItem = ({ section, item, onUpdate, onDelete, isDeleting }: { section: ModelSection; item: string; onUpdate: (section: ModelSection, oldItem: string, newItem: string) => void; onDelete: (section: ModelSection, item: string) => void; isDeleting: boolean }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item });
+const SortableItem = ({ section, item, index, onUpdate, onDelete, isDeleting }: { section: ModelSection; item: string; index: number; onUpdate: (section: ModelSection, oldItem: string, newItem: string) => void; onDelete: (section: ModelSection, item: string) => void; isDeleting: boolean }) => {
+    // Use a combination of the item text and its index for a stable, unique ID for dnd-kit
+    const uniqueId = `${item}-${index}`;
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: uniqueId });
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState(item);
 
@@ -80,6 +82,9 @@ const SortableItem = ({ section, item, onUpdate, onDelete, isDeleting }: { secti
 const Section = ({ title, sectionKey, items, onAddItem, onUpdateItem, onDeleteItem, onUpdateOrder, description, isLoading, deletingItemId }: { title: string; sectionKey: ModelSection; items: string[]; onAddItem: (section: ModelSection, item: string) => void; onUpdateItem: (section: ModelSection, oldItem: string, newItem: string) => void; onDeleteItem: (section: ModelSection, item: string) => void; onUpdateOrder: (section: ModelSection, newOrder: string[]) => void; description?: string; isLoading: boolean, deletingItemId: string | null; }) => {
     const [newItem, setNewItem] = useState("");
     const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+    
+    // Create an array of unique IDs for dnd-kit's SortableContext
+    const dndItems = items.map((item, index) => `${item}-${index}`);
 
     const handleAddItem = () => {
         if (newItem.trim()) {
@@ -95,8 +100,8 @@ const Section = ({ title, sectionKey, items, onAddItem, onUpdateItem, onDeleteIt
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (over && active.id !== over.id) {
-            const oldIndex = items.indexOf(active.id as string);
-            const newIndex = items.indexOf(over.id as string);
+            const oldIndex = dndItems.indexOf(active.id as string);
+            const newIndex = dndItems.indexOf(over.id as string);
             onUpdateOrder(sectionKey, arrayMove(items, oldIndex, newIndex));
         }
     };
@@ -109,8 +114,8 @@ const Section = ({ title, sectionKey, items, onAddItem, onUpdateItem, onDeleteIt
             </div>
             <div className="space-y-2 pl-2">
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <SortableContext items={items} strategy={verticalListSortingStrategy}>
-                        {items.map(item => <SortableItem key={`${sectionKey}-${item}`} section={sectionKey} item={item} onUpdate={onUpdateItem} onDelete={onDeleteItem} isDeleting={deletingItemId === item} />)}
+                    <SortableContext items={dndItems} strategy={verticalListSortingStrategy}>
+                        {items.map((item, index) => <SortableItem key={`${sectionKey}-${item}-${index}`} section={sectionKey} item={item} index={index} onUpdate={onUpdateItem} onDelete={onDeleteItem} isDeleting={deletingItemId === item} />)}
                     </SortableContext>
                 </DndContext>
             </div>
