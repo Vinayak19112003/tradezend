@@ -25,7 +25,7 @@ import { CSS } from '@dnd-kit/utilities';
  * A sortable and editable checklist item component.
  * It uses dnd-kit for drag-and-drop reordering.
  */
-const SortableItem = ({ section, item, onUpdate, onDelete, isLoading }: { section: ModelSection; item: string; onUpdate: (section: ModelSection, oldItem: string, newItem: string) => void; onDelete: (section: ModelSection, item: string) => void; isLoading: boolean; }) => {
+const SortableItem = ({ section, item, onUpdate, onDelete, isLoading, isDeleting }: { section: ModelSection; item: string; onUpdate: (section: ModelSection, oldItem: string, newItem: string) => void; onDelete: (section: ModelSection, item: string) => void; isLoading: boolean, isDeleting: boolean }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item });
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState(item);
@@ -66,7 +66,7 @@ const SortableItem = ({ section, item, onUpdate, onDelete, isLoading }: { sectio
                 }}
                 disabled={isLoading}
             >
-                <Trash2 className="h-4 w-4" />
+                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                 <span className="sr-only">Delete item</span>
             </Button>
         </div>
@@ -76,7 +76,7 @@ const SortableItem = ({ section, item, onUpdate, onDelete, isLoading }: { sectio
 /**
  * A component that renders an entire editable section of the trading model.
  */
-const Section = ({ title, sectionKey, items, onAddItem, onUpdateItem, onDeleteItem, onUpdateOrder, description, isLoading }: { title: string; sectionKey: ModelSection; items: string[]; onAddItem: (section: ModelSection, item: string) => void; onUpdateItem: (section: ModelSection, oldItem: string, newItem: string) => void; onDeleteItem: (section: ModelSection, item: string) => void; onUpdateOrder: (section: ModelSection, newOrder: string[]) => void; description?: string; isLoading: boolean; }) => {
+const Section = ({ title, sectionKey, items, onAddItem, onUpdateItem, onDeleteItem, onUpdateOrder, description, isLoading, deletingItemId }: { title: string; sectionKey: ModelSection; items: string[]; onAddItem: (section: ModelSection, item: string) => void; onUpdateItem: (section: ModelSection, oldItem: string, newItem: string) => void; onDeleteItem: (section: ModelSection, item: string) => void; onUpdateOrder: (section: ModelSection, newOrder: string[]) => void; description?: string; isLoading: boolean, deletingItemId: string | null; }) => {
     const [newItem, setNewItem] = useState("");
     const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
@@ -109,7 +109,7 @@ const Section = ({ title, sectionKey, items, onAddItem, onUpdateItem, onDeleteIt
             <div className="space-y-2 pl-2">
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <SortableContext items={items} strategy={verticalListSortingStrategy}>
-                        {items.map(item => <SortableItem key={item} section={sectionKey} item={item} onUpdate={onUpdateItem} onDelete={onDeleteItem} isLoading={isLoading} />)}
+                        {items.map(item => <SortableItem key={item} section={sectionKey} item={item} onUpdate={onUpdateItem} onDelete={onDeleteItem} isLoading={isLoading} isDeleting={deletingItemId === item} />)}
                     </SortableContext>
                 </DndContext>
             </div>
@@ -136,7 +136,8 @@ const Section = ({ title, sectionKey, items, onAddItem, onUpdateItem, onDeleteIt
  */
 export default function TradingModelPage() {
     const { model, updateModel, isLoaded } = useTradingModel();
-    const [isLoading, setIsLoading] = useState(false); // Local loading state for individual actions.
+    const [isLoading, setIsLoading] = useState(false); // General loading state for updates
+    const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
     /**
      * A wrapper function to show a loading spinner during async operations.
@@ -179,12 +180,16 @@ export default function TradingModelPage() {
         });
     };
 
-    const handleDeleteItem = (section: ModelSection, itemToDelete: string) => {
-       handleAction(async () => {
+    const handleDeleteItem = async (section: ModelSection, itemToDelete: string) => {
+       if (deletingItemId) return; // Don't allow another delete while one is in progress
+       setDeletingItemId(itemToDelete);
+       try {
             const newModel = { ...model };
             newModel[section] = newModel[section].filter((i: string) => i !== itemToDelete);
             await updateModel(newModel);
-        });
+        } finally {
+            setDeletingItemId(null);
+        }
     };
 
     // Show skeleton loader while the model is being fetched from Firestore.
@@ -228,7 +233,8 @@ export default function TradingModelPage() {
                         onUpdateItem={updateItem}
                         onDeleteItem={handleDeleteItem}
                         onUpdateOrder={updateOrder}
-                        isLoading={isLoading}
+                        isLoading={isLoading || !!deletingItemId}
+                        deletingItemId={deletingItemId}
                     />
                     <Section 
                         title="Daily Preparation"
@@ -238,7 +244,8 @@ export default function TradingModelPage() {
                         onUpdateItem={updateItem}
                         onDeleteItem={handleDeleteItem}
                         onUpdateOrder={updateOrder}
-                        isLoading={isLoading}
+                        isLoading={isLoading || !!deletingItemId}
+                        deletingItemId={deletingItemId}
                     />
                     <Section 
                         title="Trigger"
@@ -249,7 +256,8 @@ export default function TradingModelPage() {
                         onUpdateItem={updateItem}
                         onDeleteItem={handleDeleteItem}
                         onUpdateOrder={updateOrder}
-                        isLoading={isLoading}
+                        isLoading={isLoading || !!deletingItemId}
+                        deletingItemId={deletingItemId}
                     />
                     <Section 
                         title="LTF Execution"
@@ -260,7 +268,8 @@ export default function TradingModelPage() {
                         onUpdateItem={updateItem}
                         onDeleteItem={handleDeleteItem}
                         onUpdateOrder={updateOrder}
-                        isLoading={isLoading}
+                        isLoading={isLoading || !!deletingItemId}
+                        deletingItemId={deletingItemId}
                     />
                 </CardContent>
             </Card>
