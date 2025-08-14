@@ -256,22 +256,6 @@ export function TradeForm({
     [handleUploaderFileChange],
   );
 
-  // Set account size when account changes or when editing a trade
-  useEffect(() => {
-    if (trade) {
-        // If editing, the accountSize is fixed to what it was when the trade was made.
-        setValue("accountSize", trade.accountSize);
-    } else {
-        // For new trades, get the latest balance.
-        const selectedAccount = accounts.find((acc: any) => acc.id === accountId);
-        if (selectedAccount) {
-            const currentBalance = selectedAccount.currentBalance ?? selectedAccount.initialBalance;
-            setValue("accountSize", currentBalance);
-        }
-    }
-  }, [accountId, accounts, setValue, trade]);
-
-
   useEffect(() => {
     const entry = parseFloat(entryPrice as any);
     const stopLoss = parseFloat(sl as any);
@@ -683,7 +667,7 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
                     <FormItem>
                     <FormLabel>Account Size ($)</FormLabel>
                     <FormControl>
-                        <Input type="number" {...field} className={cn("bg-muted", isStreamerMode && "blur-sm")} readOnly />
+                        <Input type="number" {...field} className={cn(isStreamerMode && "blur-sm")} />
                     </FormControl>
                      <FormDescription>The account balance before this trade.</FormDescription>
                     <FormMessage />
