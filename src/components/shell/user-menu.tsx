@@ -5,8 +5,8 @@ import React, { useState, useEffect, useRef, ReactNode } from "react";
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Monitor, Moon, Settings, Sun, LogOut, Tv } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import { useStreamerMode } from "@/contexts/streamer-mode-context";
+import { ThemeSwitch } from "../ui/theme-switch";
 
 // --- Dropdown Primitives ---
 
@@ -108,8 +108,7 @@ export function UserMenu() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { isStreamerMode, toggleStreamerMode } = useStreamerMode();
-  const { setTheme } = useTheme();
-
+  
   const handleLogout = () => {
     logout();
     router.push('/login');
@@ -165,14 +164,16 @@ export function UserMenu() {
 
       <DropdownMenuSeparator />
 
-        <div className="py-1">
-            <div className="px-3 py-1 text-xs font-medium text-zinc-500">Theme</div>
-             <DropdownMenuItem onClick={() => setTheme('light')}>
-                <Sun className="mr-3 h-4 w-4 text-zinc-500" /> Light
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme('dark')}>
-                <Moon className="mr-3 h-4 w-4 text-zinc-500" /> Dark
-            </DropdownMenuItem>
+        <div className="p-2 flex items-center justify-between">
+            <div className="px-1 text-xs font-medium text-zinc-500">Theme</div>
+             <ThemeSwitch 
+                variant="icon-click"
+                icons={[
+                    <Sun className="h-4 w-4" key="sun" />,
+                    <Moon className="h-4 w-4" key="moon" />,
+                    <Monitor className="h-4 w-4" key="system" />
+                ]}
+             />
         </div>
 
 
