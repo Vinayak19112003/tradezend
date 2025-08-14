@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, memo } from "react";
+import { useState, memo, useMemo } from "react";
 import Image from "next/image";
 import {
   Table,
@@ -44,6 +44,15 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StreamerModeText } from "@/components/streamer-mode-text";
 import { TradeDetailsDialog } from "./trade-details-dialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis
+} from "@/components/ui/pagination";
 
 type TradeTableProps = {
   trades: Trade[];
@@ -61,6 +70,7 @@ const ResultBadge = ({ result }: { result: Trade["result"] }) => {
     return <Badge variant={variant}>{result}</Badge>;
 };
 
+const ITEMS_PER_PAGE = 10;
 
 export default memo(function TradeTable({ 
     trades, 
@@ -69,7 +79,82 @@ export default memo(function TradeTable({
 }: TradeTableProps) {
   const [tradeToDelete, setTradeToDelete] = useState<Trade | null>(null);
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const isMobile = useIsMobile();
+
+  const totalPages = Math.ceil(trades.length / ITEMS_PER_PAGE);
+
+  const paginatedTrades = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return trades.slice(startIndex, endIndex);
+  }, [trades, currentPage]);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+
+    if (totalPages <= maxPagesToShow) {
+        for (let i = 1; i <= totalPages; i++) {
+            pageNumbers.push(i);
+        }
+    } else {
+        let startPage, endPage;
+        if (currentPage <= 3) {
+            startPage = 1;
+            endPage = maxPagesToShow - 1;
+            pageNumbers.push(...Array.from({ length: endPage }, (_, i) => i + 1));
+            pageNumbers.push('ellipsis');
+            pageNumbers.push(totalPages);
+        } else if (currentPage >= totalPages - 2) {
+            startPage = totalPages - (maxPagesToShow - 2);
+            pageNumbers.push(1);
+            pageNumbers.push('ellipsis');
+            for (let i = startPage; i <= totalPages; i++) {
+                pageNumbers.push(i);
+            }
+        } else {
+            pageNumbers.push(1);
+            pageNumbers.push('ellipsis');
+            pageNumbers.push(currentPage - 1, currentPage, currentPage + 1);
+            pageNumbers.push('ellipsis');
+            pageNumbers.push(totalPages);
+        }
+    }
+
+    return (
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious href="#" onClick={(e) => {e.preventDefault(); handlePageChange(currentPage - 1)}} />
+          </PaginationItem>
+          {pageNumbers.map((page, index) =>
+            typeof page === 'number' ? (
+              <PaginationItem key={index}>
+                <PaginationLink href="#" onClick={(e) => {e.preventDefault(); handlePageChange(page)}} isActive={currentPage === page}>
+                  {page}
+                </PaginationLink>
+              </PaginationItem>
+            ) : (
+              <PaginationItem key={index}>
+                <PaginationEllipsis />
+              </PaginationItem>
+            )
+          )}
+          <PaginationItem>
+            <PaginationNext href="#" onClick={(e) => {e.preventDefault(); handlePageChange(currentPage + 1)}}/>
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    );
+  }
 
   const handleViewTrade = (trade: Trade) => {
     setViewingTrade(trade);
@@ -82,8 +167,8 @@ export default memo(function TradeTable({
     }
   };
 
-  const tradeListContent = trades.length > 0 ? (
-    trades.map((trade) => {
+  const tradeListContent = paginatedTrades.length > 0 ? (
+    paginatedTrades.map((trade) => {
       const returnPercentage = trade.accountSize && trade.accountSize > 0 && trade.pnl != null ? (trade.pnl / trade.accountSize) * 100 : 0;
       return (
         <Card key={trade.id} className="w-full">
@@ -171,6 +256,7 @@ export default memo(function TradeTable({
     return (
         <div className="w-full space-y-4">
             <div className="space-y-4">{tradeListContent}</div>
+            {totalPages > 1 && <div className="py-4">{renderPagination()}</div>}
             <AlertDialog open={!!tradeToDelete} onOpenChange={(open) => !open && setTradeToDelete(null)}>
                 <AlertDialogContent>
                 <AlertDialogHeader>
@@ -220,8 +306,8 @@ export default memo(function TradeTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {trades.length > 0 ? (
-              trades.map((trade) => {
+            {paginatedTrades.length > 0 ? (
+              paginatedTrades.map((trade) => {
                 const returnPercentage = trade.accountSize && trade.accountSize > 0 && trade.pnl != null ? (trade.pnl / trade.accountSize) * 100 : 0;
                 
                 return (
@@ -316,6 +402,8 @@ export default memo(function TradeTable({
           </TableBody>
         </Table>
       </div>
+      
+      {totalPages > 1 && <div className="py-4">{renderPagination()}</div>}
 
         <TradeDetailsDialog 
             isOpen={!!viewingTrade}
