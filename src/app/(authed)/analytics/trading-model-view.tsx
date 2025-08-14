@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { useTradingModel, type ModelSection } from '@/hooks/use-trading-model';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 // DND-Kit imports for drag-and-drop functionality.
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -25,7 +26,7 @@ import { CSS } from '@dnd-kit/utilities';
  * A sortable and editable checklist item component.
  * It uses dnd-kit for drag-and-drop reordering.
  */
-const SortableItem = ({ section, item, onUpdate, onDelete, isLoading, isDeleting }: { section: ModelSection; item: string; onUpdate: (section: ModelSection, oldItem: string, newItem: string) => void; onDelete: (section: ModelSection, item: string) => void; isLoading: boolean, isDeleting: boolean }) => {
+const SortableItem = ({ section, item, onUpdate, onDelete, isDeleting }: { section: ModelSection; item: string; onUpdate: (section: ModelSection, oldItem: string, newItem: string) => void; onDelete: (section: ModelSection, item: string) => void; isDeleting: boolean }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item });
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState(item);
@@ -64,7 +65,7 @@ const SortableItem = ({ section, item, onUpdate, onDelete, isLoading, isDeleting
                     e.stopPropagation();
                     onDelete(section, item);
                 }}
-                disabled={isLoading}
+                disabled={isDeleting}
             >
                 {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                 <span className="sr-only">Delete item</span>
@@ -109,7 +110,7 @@ const Section = ({ title, sectionKey, items, onAddItem, onUpdateItem, onDeleteIt
             <div className="space-y-2 pl-2">
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <SortableContext items={items} strategy={verticalListSortingStrategy}>
-                        {items.map(item => <SortableItem key={item} section={sectionKey} item={item} onUpdate={onUpdateItem} onDelete={onDeleteItem} isLoading={isLoading} isDeleting={deletingItemId === item} />)}
+                        {items.map(item => <SortableItem key={item} section={sectionKey} item={item} onUpdate={onUpdateItem} onDelete={onDeleteItem} isDeleting={deletingItemId === item} />)}
                     </SortableContext>
                 </DndContext>
             </div>
@@ -136,15 +137,16 @@ const Section = ({ title, sectionKey, items, onAddItem, onUpdateItem, onDeleteIt
  */
 export default function TradingModelPage() {
     const { model, updateModel, isLoaded } = useTradingModel();
-    const [isLoading, setIsLoading] = useState(false); // General loading state for updates
+    const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(false); // For add, update, reorder
     const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
     /**
-     * A wrapper function to show a loading spinner during async operations.
+     * A wrapper function for actions that set a global loading state.
      * @param {() => Promise<any>} action - The async function to execute.
      */
-    const handleAction = async (action: () => Promise<any>) => {
-        if (isLoading) return; // Prevent multiple simultaneous actions
+    const handleMutation = async (action: () => Promise<any>) => {
+        if (isLoading) return;
         setIsLoading(true);
         try {
             await action();
@@ -154,7 +156,7 @@ export default function TradingModelPage() {
     };
     
     const addItem = (section: ModelSection, item: string) => {
-        handleAction(async () => {
+        handleMutation(async () => {
             const newModel = { ...model };
             newModel[section] = [...newModel[section], item];
             await updateModel(newModel);
@@ -162,7 +164,7 @@ export default function TradingModelPage() {
     };
 
     const updateItem = (section: ModelSection, oldItem: string, newItem: string) => {
-        handleAction(async () => {
+        handleMutation(async () => {
             const newModel = { ...model };
             const index = newModel[section].indexOf(oldItem);
             if (index !== -1) {
@@ -173,7 +175,7 @@ export default function TradingModelPage() {
     };
 
     const updateOrder = (section: ModelSection, newOrder: string[]) => {
-        handleAction(async () => {
+        handleMutation(async () => {
             const newModel = { ...model };
             newModel[section] = newOrder;
             await updateModel(newModel);
@@ -181,18 +183,24 @@ export default function TradingModelPage() {
     };
 
     const handleDeleteItem = async (section: ModelSection, itemToDelete: string) => {
-       if (deletingItemId) return; // Don't allow another delete while one is in progress
+       if (deletingItemId) return;
        setDeletingItemId(itemToDelete);
        try {
             const newModel = { ...model };
             newModel[section] = newModel[section].filter((i: string) => i !== itemToDelete);
-            await updateModel(newModel);
+            const success = await updateModel(newModel);
+            if (success) {
+                toast({ title: "Item Deleted", description: "The checklist item has been removed." });
+            } else {
+                throw new Error("Failed to delete item from the database.");
+            }
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: "Could not delete the item." });
         } finally {
             setDeletingItemId(null);
         }
     };
 
-    // Show skeleton loader while the model is being fetched from Firestore.
     if (!isLoaded) {
         return (
             <div className="space-y-6">
@@ -233,7 +241,7 @@ export default function TradingModelPage() {
                         onUpdateItem={updateItem}
                         onDeleteItem={handleDeleteItem}
                         onUpdateOrder={updateOrder}
-                        isLoading={isLoading || !!deletingItemId}
+                        isLoading={isLoading}
                         deletingItemId={deletingItemId}
                     />
                     <Section 
@@ -244,7 +252,7 @@ export default function TradingModelPage() {
                         onUpdateItem={updateItem}
                         onDeleteItem={handleDeleteItem}
                         onUpdateOrder={updateOrder}
-                        isLoading={isLoading || !!deletingItemId}
+                        isLoading={isLoading}
                         deletingItemId={deletingItemId}
                     />
                     <Section 
@@ -256,7 +264,7 @@ export default function TradingModelPage() {
                         onUpdateItem={updateItem}
                         onDeleteItem={handleDeleteItem}
                         onUpdateOrder={updateOrder}
-                        isLoading={isLoading || !!deletingItemId}
+                        isLoading={isLoading}
                         deletingItemId={deletingItemId}
                     />
                     <Section 
@@ -268,7 +276,7 @@ export default function TradingModelPage() {
                         onUpdateItem={updateItem}
                         onDeleteItem={handleDeleteItem}
                         onUpdateOrder={updateOrder}
-                        isLoading={isLoading || !!deletingItemId}
+                        isLoading={isLoading}
                         deletingItemId={deletingItemId}
                     />
                 </CardContent>
