@@ -110,7 +110,7 @@ const Section = ({ title, sectionKey, items, onAddItem, onUpdateItem, onDeleteIt
             <div className="space-y-2 pl-2">
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <SortableContext items={items} strategy={verticalListSortingStrategy}>
-                        {items.map(item => <SortableItem key={item} section={sectionKey} item={item} onUpdate={onUpdateItem} onDelete={onDeleteItem} isDeleting={deletingItemId === item} />)}
+                        {items.map(item => <SortableItem key={`${sectionKey}-${item}`} section={sectionKey} item={item} onUpdate={onUpdateItem} onDelete={onDeleteItem} isDeleting={deletingItemId === item} />)}
                     </SortableContext>
                 </DndContext>
             </div>
