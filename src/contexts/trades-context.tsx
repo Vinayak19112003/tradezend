@@ -49,13 +49,11 @@ const cleanupTradeData = (obj: any) => {
 interface TradesContextType {
     trades: Trade[];
     isTradesLoading: boolean;
-    addTrade: (trade: Omit<Trade, 'id'>) => Promise<void>;
+    addTrade: (trade: Omit<Trade, 'id'>) => Promise<boolean>;
     addMultipleTrades: (newTrades: Omit<Trade, 'id'>[]) => Promise<{success: boolean, addedCount: number}>;
-    updateTrade: (trade: Trade) => Promise<void>;
+    updateTrade: (trade: Trade) => Promise<boolean>;
     deleteTrade: (id: string) => Promise<boolean>;
     deleteAllTrades: (accountId: string) => Promise<boolean>;
-    triggerRefresh: () => void;
-    refreshKey: number;
 }
 
 const TradesContext = createContext<TradesContextType | undefined>(undefined);
@@ -67,7 +65,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
 
     const [trades, setTrades] = useState<Trade[]>([]);
     const [isTradesLoading, setIsTradesLoading] = useState(true);
-    const [refreshKey, setRefreshKey] = useState(0);
 
     const getTradesCollectionRef = useCallback(() => {
         if (!user || !db) return null;
@@ -79,9 +76,6 @@ export function TradesProvider({ children }: { children: ReactNode }) {
         return doc(db, 'users', user.uid, ACCOUNTS_COLLECTION, ACCOUNTS_DOC_ID);
     }, [user]);
 
-    const triggerRefresh = useCallback(() => {
-        setRefreshKey(prev => prev + 1);
-    }, []);
 
      useEffect(() => {
         if (!user || !selectedAccountId) {
@@ -162,10 +156,10 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                     date: Timestamp.fromDate(trade.date),
                 });
             });
+            return true;
         } catch (error: any) {
             console.error("Error adding trade:", error);
-            // Re-throw the error so the form can catch it and display it.
-            throw error;
+            throw error; // Re-throw to be caught by the form
         }
     }, [getTradesCollectionRef, getAccountsDocRef]);
 
@@ -239,9 +233,10 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                     date: Timestamp.fromDate(trade.date),
                 });
             });
+             return true;
         } catch (error: any) {
             console.error("Error updating trade:", error);
-            throw error;
+            throw error; // Re-throw to be caught by the form
         }
     }, [getTradesCollectionRef, getAccountsDocRef]);
 
@@ -323,9 +318,7 @@ export function TradesProvider({ children }: { children: ReactNode }) {
         updateTrade,
         deleteTrade,
         deleteAllTrades,
-        triggerRefresh,
-        refreshKey
-    }), [trades, isTradesLoading, addTrade, addMultipleTrades, updateTrade, deleteTrade, deleteAllTrades, refreshKey, triggerRefresh]);
+    }), [trades, isTradesLoading, addTrade, addMultipleTrades, updateTrade, deleteTrade, deleteAllTrades]);
 
     return <TradesContext.Provider value={value}>{children}</TradesContext.Provider>;
 }
