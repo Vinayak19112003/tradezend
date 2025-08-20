@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Trade } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { AIPsychologist } from './ai-psychologist';
 
 // Dynamically import charting components
 const MistakeAnalysis = dynamic(() => import('@/components/analysis/mistake-analysis').then(mod => mod.MistakeAnalysis), { ssr: false, loading: () => <Skeleton className="h-[180px]" /> });
@@ -14,18 +13,15 @@ const PerformanceRadarChart = dynamic(() => import('@/components/analysis/perfor
 export default function PsychologyTab({ trades, tradingRules }: { trades: Trade[], tradingRules: string[] }) {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-            <div className="lg:col-span-1 flex flex-col gap-4 md:gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Mistake Frequency</CardTitle>
-                        <CardDescription>Most common trading errors.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <MistakeAnalysis trades={trades} />
-                    </CardContent>
-                </Card>
-                <AIPsychologist trades={trades} />
-            </div>
+            <Card className="lg:col-span-1">
+                <CardHeader>
+                    <CardTitle>Mistake Frequency</CardTitle>
+                    <CardDescription>Most common trading errors.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <MistakeAnalysis trades={trades} />
+                </CardContent>
+            </Card>
             <Card className="lg:col-span-2">
                  <CardHeader>
                     <CardTitle>Performance Metrics</CardTitle>

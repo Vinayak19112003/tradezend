@@ -30,7 +30,6 @@ Manage your user profile, trading accounts, custom strategies, and application p
 This application leverages **Google's Gemini model** via **Genkit** to provide intelligent assistance:
 
 - **AI Trade Import (`/ai/flows/import-trades-flow.ts`)**: This AI flow understands and parses various file formats (CSV, PDF, images) to extract structured trade data, saving significant manual entry time. It intelligently maps fields and handles missing data.
-- **AI Pattern Detection (`/ai/flows/pattern-detection.ts`)**: This flow acts as a trading psychologist, analyzing journal notes and psychological data to identify behavioral patterns, emotional correlations, and actionable insights to improve performance.
 
 ## Tech Stack
 
