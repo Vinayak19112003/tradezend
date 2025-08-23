@@ -25,20 +25,22 @@ type StatCardProps = {
   valueClassName?: string;
 };
 
-const StatCard = ({ label, value, subValue, icon: Icon, valueClassName }: StatCardProps) => (
-    <div className="flex flex-col gap-2 rounded-lg bg-card p-4 shadow-sm border">
-        <div className="flex justify-between items-center text-muted-foreground">
-            <p className="text-sm">{label}</p>
-            <Icon className="h-4 w-4" />
+const StatCard = memo(function StatCard({ label, value, subValue, icon: Icon, valueClassName }: StatCardProps) {
+    return (
+        <div className="flex flex-col gap-2 rounded-lg bg-card p-4 shadow-sm border">
+            <div className="flex justify-between items-center text-muted-foreground">
+                <p className="text-sm">{label}</p>
+                <Icon className="h-4 w-4" />
+            </div>
+            <div>
+                <p className={cn("text-2xl font-bold font-headline", valueClassName)}>
+                    <StreamerModeText>{value}</StreamerModeText>
+                </p>
+                {subValue && <p className="text-xs text-muted-foreground"><StreamerModeText>{subValue}</StreamerModeText></p>}
+            </div>
         </div>
-        <div>
-            <p className={cn("text-2xl font-bold font-headline", valueClassName)}>
-                <StreamerModeText>{value}</StreamerModeText>
-            </p>
-            {subValue && <p className="text-xs text-muted-foreground"><StreamerModeText>{subValue}</StreamerModeText></p>}
-        </div>
-    </div>
-);
+    );
+});
 
 export const StatsCards = memo(function StatsCards({ trades }: { trades: Trade[] }) {
   const stats = useMemo(() => {

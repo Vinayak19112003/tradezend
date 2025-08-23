@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { type Trade } from '@/lib/types';
 import { isThisMonth } from 'date-fns';
 import { TrendingUp, AlertTriangle, Target } from 'lucide-react';
@@ -14,7 +14,7 @@ type SummaryBannerProps = {
   trades: Trade[];
 };
 
-export function SummaryBanner({ trades }: SummaryBannerProps) {
+export const SummaryBanner = memo(function SummaryBanner({ trades }: SummaryBannerProps) {
   const { targets } = useTargets();
 
   const monthStats = useMemo(() => {
@@ -92,4 +92,4 @@ export function SummaryBanner({ trades }: SummaryBannerProps) {
         </div>
     </div>
   );
-}
+});
