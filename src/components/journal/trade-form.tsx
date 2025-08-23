@@ -4,12 +4,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, ImagePlus, X, Upload, Trash2 } from "lucide-react";
 import { format, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -34,14 +33,13 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { type Trade, TradeSchema, type TradingModel } from "@/lib/types";
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction, useMemo, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMistakeTags } from "@/hooks/use-mistake-tags";
 import { AddMistakeTagDialog } from "@/components/dashboard/add-mistake-tag-dialog";
 import { useAssets } from "@/hooks/use-assets";
 import { AddAssetDialog } from "@/components/dashboard/add-asset-dialog";
 import { useStrategies } from "@/hooks/use-strategies";
-import { AddStrategyDialog } from "@/components/dashboard/add-strategy-dialog";
 import { useTradingRules } from "@/hooks/use-trading-rules";
 import { AddTradingRuleDialog } from "@/components/dashboard/add-trading-rule-dialog";
 import { useAuth } from "@/hooks/use-auth";
@@ -55,6 +53,9 @@ import { useTrades } from "@/contexts/trades-context";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
 import { useTradingModel, type ModelSection } from "@/hooks/use-trading-model";
 import { useAccountContext } from "@/contexts/account-context";
+import { MultiSelect, type MultiSelectOption } from "../ui/multi-select";
+import { Checkbox } from "../ui/checkbox";
+import { useImageUpload } from "@/hooks/use-image-upload";
 
 const FormSchema = TradeSchema.omit({ id: true }).extend({
     screenshotFile: z.instanceof(File).optional(),
@@ -124,10 +125,10 @@ export function TradeForm({
   const { isStreamerMode } = useStreamerMode();
 
   const { addTrade, updateTrade } = useTrades();
-  const { strategies, addStrategy, deleteStrategy } = useStrategies();
-  const { tradingRules, addTradingRule, deleteTradingRule } = useTradingRules();
-  const { mistakeTags, addMistakeTag, deleteMistakeTag } = useMistakeTags();
-  const { assets, addAsset, deleteAsset } = useAssets();
+  const { strategies } = useStrategies();
+  const { tradingRules } = useTradingRules();
+  const { mistakeTags } = useMistakeTags();
+  const { assets } = useAssets();
   const { model: tradingModel } = useTradingModel();
   const { accounts, selectedAccountId } = useAccountContext();
 
@@ -136,7 +137,6 @@ export function TradeForm({
     defaultValues: trade
       ? { 
           ...trade,
-          accountId: trade.accountId,
           rr: trade.rr ?? 0,
           confidence: trade.confidence ?? 5,
           accountSize: trade.accountSize ?? 0,
@@ -154,9 +154,6 @@ export function TradeForm({
           entryReason: trade.entryReason ?? "",
           tradeFeelings: trade.tradeFeelings ?? "",
           lossAnalysis: trade.lossAnalysis ?? "",
-          session: trade.session,
-          keyLevel: trade.keyLevel ?? "",
-          entryTimeFrame: trade.entryTimeFrame,
         }
       : {
           accountId: selectedAccountId || '',
@@ -193,7 +190,7 @@ export function TradeForm({
         },
   });
 
-  const { watch, setValue } = form;
+  const { watch, setValue, control } = form;
   const entryPrice = watch("entryPrice");
   const sl = watch("sl");
   const exitPrice = watch("exitPrice");
@@ -204,21 +201,60 @@ export function TradeForm({
   const accountId = watch("accountId");
   const direction = watch("direction");
 
-  // Set account size when account changes or when editing a trade
-  useEffect(() => {
-    if (trade) {
-        // If editing, the accountSize is fixed to what it was when the trade was made.
-        setValue("accountSize", trade.accountSize);
-    } else {
-        // For new trades, get the latest balance.
-        const selectedAccount = accounts.find((acc: any) => acc.id === accountId);
-        if (selectedAccount) {
-            const currentBalance = selectedAccount.currentBalance ?? selectedAccount.initialBalance;
-            setValue("accountSize", currentBalance);
-        }
-    }
-  }, [accountId, accounts, setValue, trade]);
+  const {
+    previewUrl,
+    fileInputRef,
+    handleThumbnailClick,
+    handleFileChange: handleUploaderFileChange,
+    handleRemove,
+  } = useImageUpload({
+    onUpload: (file) => {
+        setValue('screenshotFile', file);
+    },
+    onRemove: () => {
+        setValue('screenshotFile', undefined);
+        setValue('screenshotURL', '');
+    },
+    initialUrl: trade?.screenshotURL
+  });
 
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const file = e.dataTransfer.files?.[0];
+      if (file && file.type.startsWith("image/")) {
+        const fakeEvent = {
+          target: {
+            files: [file],
+          },
+        } as React.ChangeEvent<HTMLInputElement>;
+        handleUploaderFileChange(fakeEvent);
+      }
+    },
+    [handleUploaderFileChange],
+  );
 
   useEffect(() => {
     const entry = parseFloat(entryPrice as any);
@@ -247,11 +283,6 @@ export function TradeForm({
     const rRatio = parseFloat(rr as any);
     const tradeResult = result;
     
-    // This effect should only run if the user hasn't manually edited the PNL.
-    // However, since we're making PNL always editable, we can comment this out
-    // or add a flag to check if PNL was manually set. For simplicity, we'll allow override.
-    // A more advanced implementation might use a state `const [isPnlManuallySet, setIsPnlManuallySet] = useState(false)`
-
     if (!isNaN(size) && size > 0 && !isNaN(riskPercent) && riskPercent > 0) {
         const riskAmount = size * (riskPercent / 100);
         let calculatedPnl = 0;
@@ -264,6 +295,13 @@ export function TradeForm({
     }
 }, [accountSize, riskPercentage, rr, result, setValue]);
 
+const mistakeOptions = useMemo((): MultiSelectOption[] => 
+    mistakeTags.map((tag, index) => ({ id: index, name: tag, value: tag })), 
+[mistakeTags]);
+
+const ruleOptions = useMemo((): MultiSelectOption[] => 
+    tradingRules.map((rule, index) => ({ id: index, name: rule, value: rule })),
+[tradingRules]);
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     setIsSaving(true);
@@ -283,6 +321,9 @@ export function TradeForm({
             const fileRef = storageRef(storage, filePath);
             await uploadBytes(fileRef, file);
             screenshotURL = await getDownloadURL(fileRef);
+        } else if (previewUrl === null) {
+            // Handle case where existing image was removed
+            screenshotURL = "";
         }
 
         const tradeData = {
@@ -291,19 +332,14 @@ export function TradeForm({
         };
         delete (tradeData as any).screenshotFile;
         
-        let success = false;
         if (trade) {
-            success = await updateTrade({ ...tradeData, id: trade.id });
+            await updateTrade({ ...tradeData, id: trade.id });
         } else {
-            success = await addTrade(tradeData);
+            await addTrade(tradeData);
         }
         
-        if (success) {
-            toast({ title: "Trade Saved!", description: "Your trade has been successfully logged." });
-            onSaveSuccess();
-        } else {
-            throw new Error("Failed to save trade to the database.");
-        }
+        toast({ title: "Trade Saved!", description: "Your trade has been successfully logged." });
+        onSaveSuccess();
 
     } catch (error) {
         console.error("Trade save/upload failed:", error);
@@ -435,7 +471,7 @@ export function TradeForm({
                         ))}
                       </SelectContent>
                     </Select>
-                    <AddAssetDialog assets={assets} addAsset={addAsset} deleteAsset={deleteAsset}/>
+                    <AddAssetDialog />
                 </div>
                 <FormMessage />
               </FormItem>
@@ -447,21 +483,18 @@ export function TradeForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Strategy</FormLabel>
-                 <div className="flex items-center gap-2">
-                    <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Select a strategy" />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        {strategies.map(strategy => (
-                            <SelectItem key={strategy} value={strategy}>{strategy}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                    <AddStrategyDialog strategies={strategies} addStrategy={addStrategy} deleteStrategy={deleteStrategy}/>
-                </div>
+                <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                    <SelectTrigger>
+                    <SelectValue placeholder="Select a strategy" />
+                    </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                    {strategies.map(strategy => (
+                        <SelectItem key={strategy} value={strategy}>{strategy}</SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -634,7 +667,7 @@ export function TradeForm({
                     <FormItem>
                     <FormLabel>Account Size ($)</FormLabel>
                     <FormControl>
-                        <Input type="number" {...field} className={cn(isStreamerMode && "blur-sm")} readOnly />
+                        <Input type="number" {...field} className={cn(isStreamerMode && "blur-sm")} />
                     </FormControl>
                      <FormDescription>The account balance before this trade.</FormDescription>
                     <FormMessage />
@@ -818,120 +851,52 @@ export function TradeForm({
         </Accordion>
 
         <FormField
-          control={form.control}
-          name="rulesFollowed"
-          render={() => (
-            <FormItem>
-              <div className="mb-4">
-                <div className="flex items-center gap-2">
-                   <FormLabel className="text-base">Rules Followed</FormLabel>
-                   <AddTradingRuleDialog 
-                    tradingRules={tradingRules}
-                    addTradingRule={addTradingRule}
-                    deleteTradingRule={deleteTradingRule}
-                   />
+            control={control}
+            name="rulesFollowed"
+            render={({ field }) => (
+                <FormItem>
+                <div className="mb-4 flex items-center justify-between">
+                    <div>
+                        <FormLabel className="text-base">Rules Followed</FormLabel>
+                        <FormDescription>
+                          Check all the general rules you followed for this trade.
+                        </FormDescription>
+                    </div>
+                    <AddTradingRuleDialog />
                 </div>
-                <FormDescription>
-                  Check all the general rules you followed for this trade.
-                </FormDescription>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {tradingRules.map((item) => (
-                  <FormField
-                    key={item}
-                    control={form.control}
-                    name="rulesFollowed"
-                    render={({ field }) => {
-                      return (
-                        <FormItem
-                          key={item}
-                          className="flex flex-row items-start space-x-3 space-y-0"
-                        >
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(item)}
-                              onCheckedChange={(checked) => {
-                                const currentValues = field.value || [];
-                                return checked
-                                  ? field.onChange([...currentValues, item])
-                                  : field.onChange(
-                                      currentValues.filter(
-                                        (value) => value !== item
-                                      )
-                                    );
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            {item}
-                          </FormLabel>
-                        </FormItem>
-                      );
-                    }}
-                  />
-                ))}
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
+                <MultiSelect
+                    options={ruleOptions}
+                    selected={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select rules..."
+                />
+                <FormMessage />
+                </FormItem>
+            )}
         />
         
         <Separator />
         
         <FormField
-          control={form.control}
+          control={control}
           name="mistakes"
-          render={() => (
+          render={({ field }) => (
             <FormItem>
-              <div className="mb-4">
-                <div className="flex items-center gap-2">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
                    <FormLabel className="text-base">Mistakes Made</FormLabel>
-                   <AddMistakeTagDialog 
-                    mistakeTags={mistakeTags}
-                    addMistakeTag={addMistakeTag}
-                    deleteMistakeTag={deleteMistakeTag}
-                   />
+                    <FormDescription>
+                    Select any mistakes you made during this trade.
+                    </FormDescription>
                 </div>
-                <FormDescription>
-                  Select any mistakes you made during this trade.
-                </FormDescription>
+                <AddMistakeTagDialog />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {mistakeTags.map((item) => (
-                  <FormField
-                    key={item}
-                    control={form.control}
-                    name="mistakes"
-                    render={({ field }) => {
-                      return (
-                        <FormItem
-                          key={item}
-                          className="flex flex-row items-start space-x-3 space-y-0"
-                        >
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(item)}
-                              onCheckedChange={(checked) => {
-                                const currentValues = field.value || [];
-                                return checked
-                                  ? field.onChange([...currentValues, item])
-                                  : field.onChange(
-                                      currentValues.filter(
-                                        (value) => value !== item
-                                      )
-                                    );
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            {item}
-                          </FormLabel>
-                        </FormItem>
-                      );
-                    }}
-                  />
-                ))}
-              </div>
+                <MultiSelect
+                    options={mistakeOptions}
+                    selected={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select mistakes..."
+                />
               <FormMessage />
             </FormItem>
           )}
@@ -971,36 +936,84 @@ export function TradeForm({
             </FormItem>
           )}
         />
-        
+
         <FormField
             control={form.control}
             name="screenshotFile"
-            render={({ field: { onChange, value, ...rest } }) => (
+            render={() => (
                 <FormItem>
-                <FormLabel>Screenshot</FormLabel>
-                {trade?.screenshotURL && !value && (
-                    <div className="relative h-24 w-40 rounded-md overflow-hidden">
-                        <Image src={trade.screenshotURL} alt="Current screenshot" layout="fill" objectFit="cover" />
-                    </div>
-                )}
-                <FormControl>
-                    <Input 
-                        type="file" 
+                    <FormLabel>Screenshot</FormLabel>
+                    <Input
+                        type="file"
                         accept="image/*"
-                        onChange={(e) => {
-                            if (e.target.files && e.target.files.length > 0) {
-                                onChange(e.target.files[0]);
-                            }
-                        }}
+                        className="hidden"
+                        ref={fileInputRef}
+                        onChange={handleUploaderFileChange}
                     />
-                </FormControl>
-                <FormDescription>
-                    Upload an image of your trade setup or result.
-                </FormDescription>
-                <FormMessage />
+                    {!previewUrl ? (
+                        <div
+                        onClick={handleThumbnailClick}
+                        onDragOver={handleDragOver}
+                        onDragEnter={handleDragEnter}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={cn(
+                            "flex h-48 cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 transition-colors hover:bg-muted",
+                            isDragging && "border-primary/50 bg-primary/5",
+                        )}
+                        >
+                        <div className="rounded-full bg-background p-3 shadow-sm">
+                            <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div className="text-center">
+                            <p className="text-sm font-medium">Click to select</p>
+                            <p className="text-xs text-muted-foreground">
+                            or drag and drop file here
+                            </p>
+                        </div>
+                        </div>
+                    ) : (
+                        <div className="relative">
+                        <div className="group relative h-48 overflow-hidden rounded-lg border">
+                            <Image
+                            src={previewUrl}
+                            alt="Preview"
+                            fill
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100" />
+                            <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                            <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={handleThumbnailClick}
+                                className="h-9 w-9 p-0"
+                                type="button"
+                            >
+                                <Upload className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={handleRemove}
+                                className="h-9 w-9 p-0"
+                                type="button"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                            </div>
+                        </div>
+                        </div>
+                    )}
+                     <FormDescription>
+                        Upload an image of your trade setup or result.
+                    </FormDescription>
+                    <FormMessage />
                 </FormItem>
             )}
         />
+
 
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

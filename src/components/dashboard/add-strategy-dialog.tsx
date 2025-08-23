@@ -56,9 +56,9 @@ export function AddStrategyDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Manage Strategies
+        <Button size="sm" variant="outline" className="h-7 w-7 p-0">
+          <PlusCircle className="h-4 w-4" />
+          <span className="sr-only">Manage Strategies</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -121,3 +121,5 @@ export function AddStrategyDialog() {
     </Dialog>
   );
 }
+
+    
