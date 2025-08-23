@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { GripVertical, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useTradingModel, type ModelSection } from '@/hooks/use-trading-model';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -46,7 +46,10 @@ const SortableItem = ({ section, item, index, onUpdate, onDelete, isDeleting }: 
     };
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+        <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+             <div {...attributes} {...listeners} className="cursor-grab p-1">
+                <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </div>
             {isEditing ? (
                 <Input 
                     value={editText} 
@@ -63,10 +66,7 @@ const SortableItem = ({ section, item, index, onUpdate, onDelete, isDeleting }: 
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(section, item);
-                }}
+                onClick={() => onDelete(section, item)}
                 disabled={isDeleting}
             >
                 {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
