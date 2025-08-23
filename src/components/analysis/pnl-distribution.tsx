@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LabelList, ReferenceLine, Tooltip } from 'recharts';
 import { useTheme } from "next-themes";
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCurrency } from '@/contexts/currency-context';
 
 type PnlDistributionProps = {
     trades: Trade[];
@@ -14,6 +15,7 @@ type PnlDistributionProps = {
 
 export default memo(function PnlDistribution({ trades }: PnlDistributionProps) {
     const { theme } = useTheme();
+    const { currencySymbol } = useCurrency();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -64,7 +66,7 @@ export default memo(function PnlDistribution({ trades }: PnlDistributionProps) {
             const lossData = payload.find(p => p.dataKey === 'losses');
             return (
                 <div className="rounded-lg border bg-background p-2 shadow-sm text-sm">
-                    <div className="font-bold mb-1">P&L Range: ${label}</div>
+                    <div className="font-bold mb-1">P&L Range: {currencySymbol}{label}</div>
                     <div className="text-success">Wins: {winData?.value || 0}</div>
                     <div className="text-destructive">Losses: {Math.abs(lossData?.value || 0)}</div>
                 </div>

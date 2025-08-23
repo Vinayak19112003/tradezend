@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { StreamerModeText } from "@/components/streamer-mode-text";
 import Image from 'next/image';
 import { Separator } from "../ui/separator";
+import { useCurrency } from "@/contexts/currency-context";
 
 type TradeDetailsDialogProps = {
   trade: Trade | null;
@@ -64,6 +65,7 @@ const ListBlock = ({ label, items }: { label: string; items: string[] | undefine
 };
 
 export function TradeDetailsDialog({ trade, isOpen, onOpenChange }: TradeDetailsDialogProps) {
+  const { formatCurrency } = useCurrency();
   if (!trade) return null;
   const returnPercentage = trade.accountSize && trade.accountSize > 0 && trade.pnl != null ? (trade.pnl / trade.accountSize) * 100 : 0;
 
@@ -97,10 +99,10 @@ export function TradeDetailsDialog({ trade, isOpen, onOpenChange }: TradeDetails
                  <DetailItem label="Confidence" value={`${trade.confidence}/10`} />
 
                  <DetailItem 
-                    label="PNL ($)"
+                    label="PNL"
                     value={
                         <StreamerModeText className={cn(trade.pnl != null && trade.pnl > 0 ? 'text-success' : trade.pnl != null && trade.pnl < 0 ? 'text-destructive' : '')}>
-                            {trade.pnl != null ? `${trade.pnl >= 0 ? '+' : ''}$${trade.pnl.toFixed(2)}` : 'N/A'}
+                            {trade.pnl != null ? formatCurrency(trade.pnl, { sign: true }) : 'N/A'}
                         </StreamerModeText>
                     }
                  />
@@ -127,7 +129,7 @@ export function TradeDetailsDialog({ trade, isOpen, onOpenChange }: TradeDetails
                     label="Account Size"
                     value={
                         <StreamerModeText>
-                            {trade.accountSize ? `$${trade.accountSize.toLocaleString()}` : 'N/A'}
+                            {trade.accountSize ? formatCurrency(trade.accountSize) : 'N/A'}
                         </StreamerModeText>
                     }
                  />

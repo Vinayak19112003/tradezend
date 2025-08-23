@@ -56,6 +56,7 @@ import { useAccountContext } from "@/contexts/account-context";
 import { MultiSelect, type MultiSelectOption } from "../ui/multi-select";
 import { Checkbox } from "../ui/checkbox";
 import { useImageUpload } from "@/hooks/use-image-upload";
+import { useCurrency } from "@/contexts/currency-context";
 
 const FormSchema = TradeSchema.omit({ id: true }).extend({
     screenshotFile: z.instanceof(File).optional(),
@@ -123,6 +124,7 @@ export function TradeForm({
   const [isSaving, setIsSaving] = useState(false);
   const { user } = useAuth();
   const { isStreamerMode } = useStreamerMode();
+  const { currencySymbol } = useCurrency();
 
   const { addTrade, updateTrade } = useTrades();
   const { strategies } = useStrategies();
@@ -665,7 +667,7 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
                 name="accountSize"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Account Size ($)</FormLabel>
+                    <FormLabel>Account Size ({currencySymbol})</FormLabel>
                     <FormControl>
                         <Input type="number" {...field} className={cn(isStreamerMode && "blur-sm")} />
                     </FormControl>
@@ -692,7 +694,7 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
                 name="pnl"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Profit/Loss ($)</FormLabel>
+                    <FormLabel>Profit/Loss ({currencySymbol})</FormLabel>
                     <FormControl>
                         <Input type="number" {...field} className={cn(isStreamerMode && "blur-sm")}/>
                     </FormControl>

@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StreamerModeText } from '@/components/streamer-mode-text';
+import { useCurrency } from '@/contexts/currency-context';
 
 type MonthlyCalendarProps = {
   trades: Trade[];
@@ -41,6 +42,7 @@ export default memo(function MonthlyCalendar({ trades, onDateSelect }: MonthlyCa
   const [currentDate, setCurrentDate] = useState(new Date());
   const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
+  const { formatCurrency, currencySymbol } = useCurrency();
 
   useEffect(() => {
     setMounted(true);
@@ -49,6 +51,10 @@ export default memo(function MonthlyCalendar({ trades, onDateSelect }: MonthlyCa
   const dailyData = useMemo(() => {
     const dataByDate = new Map<string, DailyData>();
     
+    if (!trades) {
+        return dataByDate;
+    }
+
     trades.forEach(trade => {
         const dateKey = format(new Date(trade.date), 'yyyy-MM-dd');
         const dayData = dataByDate.get(dateKey) || { netR: 0, totalTrades: 0, pnl: 0, wins: 0, losses: 0 };
@@ -187,7 +193,7 @@ export default memo(function MonthlyCalendar({ trades, onDateSelect }: MonthlyCa
                                                 data.pnl < 0 ? 'text-destructive' :
                                                 'text-muted-foreground'
                                                 )}>
-                                                    {data.pnl >= 0 ? '+$' : '-$'}{Math.abs(data.pnl).toFixed(1)}
+                                                    {formatCurrency(data.pnl, { sign: true, decimals: 1 })}
                                                 </p> 
                                             </StreamerModeText>
                                             <p className={cn(
@@ -211,7 +217,7 @@ export default memo(function MonthlyCalendar({ trades, onDateSelect }: MonthlyCa
                                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                                                 <span className="font-semibold">P&L:</span>
                                                 <span className={cn(data.pnl > 0 ? 'text-success' : data.pnl < 0 ? 'text-destructive' : '')}>
-                                                   <StreamerModeText>{data.pnl.toFixed(2)}</StreamerModeText>
+                                                   <StreamerModeText>{formatCurrency(data.pnl)}</StreamerModeText>
                                                 </span>
                                                 <span className="font-semibold">Net R:</span>
                                                 <span>{data.netR.toFixed(2)}</span>
@@ -239,7 +245,7 @@ export default memo(function MonthlyCalendar({ trades, onDateSelect }: MonthlyCa
                                         "font-bold text-base",
                                         pnl > 0 ? 'text-success' : pnl < 0 ? 'text-destructive' : 'text-muted-foreground'
                                     )}>
-                                        {pnl >= 0 ? '+$' : '-$'}{Math.abs(pnl).toFixed(1)}
+                                        {formatCurrency(pnl, { sign: true, decimals: 1 })}
                                     </p>
                                 </StreamerModeText>
                                 <p className={cn(
@@ -259,5 +265,3 @@ export default memo(function MonthlyCalendar({ trades, onDateSelect }: MonthlyCa
     </Card>
   );
 });
-
-    

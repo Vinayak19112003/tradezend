@@ -16,6 +16,7 @@ import {
     Divide,
     Clock,
 } from "lucide-react";
+import { useCurrency } from "@/contexts/currency-context";
 
 type StatCardProps = { 
   label: string; 
@@ -43,6 +44,7 @@ const StatCard = memo(function StatCard({ label, value, subValue, icon: Icon, va
 });
 
 export const StatsCards = memo(function StatsCards({ trades }: { trades: Trade[] }) {
+  const { formatCurrency } = useCurrency();
   const stats = useMemo(() => {
     const totalTrades = trades.length;
 
@@ -99,24 +101,19 @@ export const StatsCards = memo(function StatsCards({ trades }: { trades: Trade[]
       avgTradeDuration: `${avgDurationMinutes.toFixed(0)} min`
     };
   }, [trades]);
-  
-  const formatCurrency = (value: number) => {
-      const sign = value >= 0 ? "+" : "-";
-      return `${sign}$${Math.abs(value).toFixed(2)}`;
-  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
             label="Total P&L" 
-            value={formatCurrency(stats.totalPnl)}
+            value={formatCurrency(stats.totalPnl, { sign: true })}
             subValue="Net profit/loss for period"
             icon={DollarSign}
             valueClassName={stats.totalPnl >= 0 ? "text-success" : "text-destructive"}
         />
          <StatCard 
             label="Avg Daily P&L" 
-            value={formatCurrency(stats.avgDailyPnl)}
+            value={formatCurrency(stats.avgDailyPnl, { sign: true })}
             subValue="Avg profit/loss per day"
             icon={CalendarDays}
             valueClassName={stats.avgDailyPnl >= 0 ? "text-success" : "text-destructive"}

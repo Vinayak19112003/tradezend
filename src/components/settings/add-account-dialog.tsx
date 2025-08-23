@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PlusCircle, Loader2 } from "lucide-react";
 import { useAccounts } from "@/hooks/use-accounts";
+import { useCurrency } from "@/contexts/currency-context";
 
 const AccountFormSchema = z.object({
   name: z.string().min(1, "Account name is required."),
@@ -38,6 +39,7 @@ export function AddAccountDialog() {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { addAccount } = useAccounts();
+  const { currencySymbol } = useCurrency();
 
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(AccountFormSchema),
@@ -92,7 +94,7 @@ export function AddAccountDialog() {
               name="initialBalance"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Initial Balance ($)</FormLabel>
+                  <FormLabel>Initial Balance ({currencySymbol})</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} />
                   </FormControl>

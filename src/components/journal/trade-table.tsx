@@ -40,7 +40,7 @@ import { type Trade } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { MoreHorizontal, ImageIcon, Trash2, Edit, Eye } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-is-mobile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StreamerModeText } from "@/components/streamer-mode-text";
 import { TradeDetailsDialog } from "./trade-details-dialog";
@@ -53,6 +53,7 @@ import {
   PaginationPrevious,
   PaginationEllipsis
 } from "@/components/ui/pagination";
+import { useCurrency } from "@/contexts/currency-context";
 
 type TradeTableProps = {
   trades: Trade[];
@@ -81,6 +82,7 @@ export default memo(function TradeTable({
   const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const isMobile = useIsMobile();
+  const { formatCurrency } = useCurrency();
 
   const totalPages = Math.ceil(trades.length / ITEMS_PER_PAGE);
 
@@ -185,10 +187,10 @@ export default memo(function TradeTable({
                 <div className="font-medium text-muted-foreground">Direction</div>
                 <div className={cn("font-semibold", trade.direction === 'Buy' ? 'text-success' : 'text-destructive')}>{trade.direction}</div>
                 
-                <div className="font-medium text-muted-foreground">PNL ($)</div>
+                <div className="font-medium text-muted-foreground">PNL</div>
                 <div>
                     <StreamerModeText className={cn("font-medium", trade.pnl != null && trade.pnl > 0 ? 'text-success' : trade.pnl != null && trade.pnl < 0 ? 'text-destructive' : '')}>
-                        {trade.pnl != null ? `${trade.pnl >= 0 ? '+' : ''}$${trade.pnl.toFixed(2)}` : 'N/A'}
+                        {trade.pnl != null ? formatCurrency(trade.pnl, { sign: true }) : 'N/A'}
                     </StreamerModeText>
                 </div>
 
@@ -296,7 +298,7 @@ export default memo(function TradeTable({
               <TableHead>Strategy</TableHead>
               <TableHead>Direction</TableHead>
               <TableHead className="text-center">RR</TableHead>
-              <TableHead className="text-right">PNL ($)</TableHead>
+              <TableHead className="text-right">PNL</TableHead>
               <TableHead className="text-right">Return %</TableHead>
               <TableHead className="text-center">Confidence</TableHead>
               <TableHead>Result</TableHead>
@@ -323,7 +325,7 @@ export default memo(function TradeTable({
                     <TableCell className="text-center">{trade.rr?.toFixed(2) ?? 'N/A'}</TableCell>
                     <TableCell>
                       <StreamerModeText className={cn("text-right font-medium", trade.pnl != null && trade.pnl > 0 ? 'text-success' : trade.pnl != null && trade.pnl < 0 ? 'text-destructive' : '')}>
-                        {trade.pnl != null ? `$${trade.pnl.toFixed(2)}` : 'N/A'}
+                        {trade.pnl != null ? formatCurrency(trade.pnl) : 'N/A'}
                       </StreamerModeText>
                     </TableCell>
                     <TableCell>

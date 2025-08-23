@@ -9,6 +9,7 @@ import { useTheme } from "next-themes";
 import { Skeleton } from '@/components/ui/skeleton';
 import { getDay } from 'date-fns';
 import { StreamerModeText } from '@/components/streamer-mode-text';
+import { useCurrency } from '@/contexts/currency-context';
 
 type DailyPerformanceProps = {
     trades: Trade[];
@@ -16,6 +17,7 @@ type DailyPerformanceProps = {
 
 export const DailyPerformance = memo(function DailyPerformance({ trades }: DailyPerformanceProps) {
     const { theme } = useTheme();
+    const { formatCurrency, currencySymbol } = useCurrency();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -60,7 +62,7 @@ export const DailyPerformance = memo(function DailyPerformance({ trades }: Daily
                         <div className="col-span-2 font-bold mb-1">{label}</div>
                         <div className="text-muted-foreground">PNL</div>
                         <div className="font-semibold text-right">
-                           <StreamerModeText>{data.pnl >= 0 ? '+' : ''}${data.pnl.toFixed(2)}</StreamerModeText>
+                           <StreamerModeText>{formatCurrency(data.pnl)}</StreamerModeText>
                         </div>
                         <div className="text-muted-foreground">Trades</div>
                         <div className="font-semibold text-right">{data.trades}</div>
@@ -99,7 +101,7 @@ export const DailyPerformance = memo(function DailyPerformance({ trades }: Daily
                               fontSize={12}
                               tickLine={false}
                               axisLine={false}
-                              tickFormatter={(value) => `$${value}`}
+                              tickFormatter={(value) => `${currencySymbol}${value}`}
                             />
                             <Tooltip
                                 contentStyle={{

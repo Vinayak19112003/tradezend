@@ -7,6 +7,7 @@ import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type Trade } from "@/lib/types";
 import { StreamerModeText } from "@/components/streamer-mode-text";
 import { cn } from "@/lib/utils";
+import { useCurrency } from '@/contexts/currency-context';
 
 const StatItem = ({ label, value, valueClassName }: { label: string, value: string, valueClassName?: string }) => (
     <div className="flex justify-between items-center text-sm">
@@ -16,11 +17,12 @@ const StatItem = ({ label, value, valueClassName }: { label: string, value: stri
 );
 
 export default memo(function DrawdownStreakAnalysis({ trades }: { trades: Trade[] }) {
+    const { formatCurrency } = useCurrency();
     const stats = useMemo(() => {
         if (trades.length === 0) {
             return {
                 maxDrawdown: '0.00R',
-                maxDrawdownDollars: '$0.00',
+                maxDrawdownDollars: formatCurrency(0),
                 longestWinStreak: 0,
                 longestLossStreak: 0,
             };
@@ -70,12 +72,12 @@ export default memo(function DrawdownStreakAnalysis({ trades }: { trades: Trade[
         
         return {
             maxDrawdown: `${maxDrawdownR.toFixed(2)}R`,
-            maxDrawdownDollars: `$${maxDrawdownDollars.toFixed(2)}`,
+            maxDrawdownDollars: formatCurrency(maxDrawdownDollars),
             longestWinStreak,
             longestLossStreak,
         };
 
-    }, [trades]);
+    }, [trades, formatCurrency]);
 
     return (
         <InteractiveCard>

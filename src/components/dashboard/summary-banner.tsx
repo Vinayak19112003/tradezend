@@ -9,6 +9,7 @@ import { StreamerModeText } from '@/components/streamer-mode-text';
 import { useTargets } from '@/hooks/use-targets';
 import { Progress } from '@/components/ui/progress';
 import { SetTargetsDialog } from '@/components/settings/set-targets-dialog';
+import { useCurrency } from '@/contexts/currency-context';
 
 type SummaryBannerProps = {
   trades: Trade[];
@@ -16,6 +17,7 @@ type SummaryBannerProps = {
 
 export const SummaryBanner = memo(function SummaryBanner({ trades }: SummaryBannerProps) {
   const { targets } = useTargets();
+  const { formatCurrency } = useCurrency();
 
   const monthStats = useMemo(() => {
     const thisMonthsTrades = trades.filter(trade => isThisMonth(new Date(trade.date)));
@@ -47,7 +49,7 @@ export const SummaryBanner = memo(function SummaryBanner({ trades }: SummaryBann
                 <div>
                     <p className="text-sm text-muted-foreground">Monthly Profit Target</p>
                     <StreamerModeText as="p" className="text-2xl font-bold font-headline text-success">
-                        {`$${monthStats.pnl.toFixed(2)} / $${targets.profit.toFixed(2)}`}
+                        {`${formatCurrency(monthStats.pnl)} / ${formatCurrency(targets.profit)}`}
                     </StreamerModeText>
                 </div>
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success/10 text-success">
@@ -63,7 +65,7 @@ export const SummaryBanner = memo(function SummaryBanner({ trades }: SummaryBann
                 <div>
                     <p className="text-sm text-muted-foreground">Max Loss Limit</p>
                     <StreamerModeText as="p" className="text-2xl font-bold font-headline text-destructive">
-                        {`$${Math.abs(monthStats.pnl < 0 ? monthStats.pnl : 0).toFixed(2)} / $${targets.loss.toFixed(2)}`}
+                        {`${formatCurrency(Math.abs(monthStats.pnl < 0 ? monthStats.pnl : 0))} / ${formatCurrency(targets.loss)}`}
                     </StreamerModeText>
                 </div>
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">

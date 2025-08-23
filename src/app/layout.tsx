@@ -7,6 +7,7 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { StreamerModeProvider } from '@/contexts/streamer-mode-context';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import { cn } from '@/lib/utils';
+import { CurrencyProvider } from '@/contexts/currency-context';
 
 export const metadata: Metadata = {
   title: 'Anony Trading',
@@ -47,8 +48,10 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <StreamerModeProvider>
-              {children}
-              <Toaster />
+                <CurrencyProvider>
+                    {children}
+                    <Toaster />
+                </CurrencyProvider>
             </StreamerModeProvider>
           </ThemeProvider>
         </AuthProvider>

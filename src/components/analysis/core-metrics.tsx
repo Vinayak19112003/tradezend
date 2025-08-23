@@ -8,6 +8,7 @@ import { type Trade } from "@/lib/types";
 import { StreamerModeText } from "@/components/streamer-mode-text";
 import { cn } from "@/lib/utils";
 import { differenceInDays, getDay, parse, subDays } from 'date-fns';
+import { useCurrency } from '@/contexts/currency-context';
 
 const StatItem = ({ label, value, valueClassName }: { label: string, value: string, valueClassName?: string }) => (
     <div className="flex justify-between items-center text-sm">
@@ -17,13 +18,14 @@ const StatItem = ({ label, value, valueClassName }: { label: string, value: stri
 );
 
 export default memo(function CoreMetrics({ trades }: { trades: Trade[] }) {
+    const { formatCurrency } = useCurrency();
     const stats = useMemo(() => {
         if (trades.length === 0) {
             return {
-                largestProfit: '$0.00',
-                largestLoss: '$0.00',
-                avgWin: '$0.00',
-                avgLoss: '$0.00',
+                largestProfit: formatCurrency(0),
+                largestLoss: formatCurrency(0),
+                avgWin: formatCurrency(0),
+                avgLoss: formatCurrency(0),
                 mostProfitableDay: 'N/A',
                 leastProfitableDay: 'N/A',
                 avgTradesPerDay: '0.0',
@@ -73,17 +75,17 @@ export default memo(function CoreMetrics({ trades }: { trades: Trade[] }) {
         const avgTradeDuration = avgDurationMinutes > 0 ? `${Math.round(avgDurationMinutes)} min` : 'N/A';
         
         return {
-            largestProfit: `$${largestProfit.toFixed(2)}`,
-            largestLoss: `$${largestLoss.toFixed(2)}`,
-            avgWin: `$${avgWin.toFixed(2)}`,
-            avgLoss: `$${avgLoss.toFixed(2)}`,
+            largestProfit: formatCurrency(largestProfit),
+            largestLoss: formatCurrency(largestLoss),
+            avgWin: formatCurrency(avgWin),
+            avgLoss: formatCurrency(avgLoss),
             mostProfitableDay,
             leastProfitableDay,
             avgTradesPerDay: avgTradesPerDay.toFixed(1),
             avgTradeDuration,
         };
 
-    }, [trades]);
+    }, [trades, formatCurrency]);
 
     return (
         <InteractiveCard>

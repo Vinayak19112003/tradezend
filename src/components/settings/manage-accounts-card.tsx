@@ -10,9 +10,11 @@ import { ScrollArea } from '../ui/scroll-area';
 import { AddAccountDialog } from './add-account-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EditAccountDialog } from './edit-account-dialog';
+import { useCurrency } from '@/contexts/currency-context';
 
 export function ManageAccountsCard() {
     const { accounts, deleteAccount, isLoaded } = useAccounts();
+    const { formatCurrency } = useCurrency();
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
     const handleDelete = async (accountId: string) => {
@@ -44,7 +46,7 @@ export function ManageAccountsCard() {
                                 <div>
                                     <span className="text-sm font-medium">{account.name}</span>
                                     <p className="text-xs text-muted-foreground">
-                                        Initial Balance: ${account.initialBalance?.toLocaleString()}
+                                        Initial Balance: {formatCurrency(account.initialBalance)}
                                     </p>
                                 </div>
                                 <div className='flex items-center'>

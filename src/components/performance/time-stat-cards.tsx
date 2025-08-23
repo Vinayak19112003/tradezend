@@ -8,6 +8,7 @@ import { getDay, parse } from 'date-fns';
 import { Clock, Calendar, BarChart, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StreamerModeText } from '../streamer-mode-text';
+import { useCurrency } from '@/contexts/currency-context';
 
 const DURATION_BUCKETS = [
     { label: 'Under 1h', max: 60 },
@@ -31,6 +32,7 @@ const StatCard = ({ title, value, subValue, icon: Icon, valueClassName }: { titl
 
 
 export const TimeStatCards = memo(function TimeStatCards({ trades }: { trades: Trade[] }) {
+    const { formatCurrency } = useCurrency();
 
     const stats = useMemo(() => {
         if (trades.length === 0) {
@@ -132,28 +134,28 @@ export const TimeStatCards = memo(function TimeStatCards({ trades }: { trades: T
             <StatCard 
                 title="Best Trading Time" 
                 value={stats.bestTime} 
-                subValue={`Avg: $${stats.avgPnlBestTime.toFixed(2)}`}
+                subValue={`Avg: ${formatCurrency(stats.avgPnlBestTime)}`}
                 icon={Clock}
                 valueClassName={stats.avgPnlBestTime > 0 ? 'text-success' : 'text-destructive'}
             />
             <StatCard 
                 title="Best Day" 
                 value={stats.bestDay} 
-                subValue={`Avg: $${stats.avgPnlBestDay.toFixed(2)}`}
+                subValue={`Avg: ${formatCurrency(stats.avgPnlBestDay)}`}
                 icon={Calendar} 
                 valueClassName={stats.avgPnlBestDay > 0 ? 'text-success' : 'text-destructive'}
             />
             <StatCard 
                 title="Optimal Duration" 
                 value={stats.optimalDuration} 
-                subValue={`Avg: $${stats.avgPnlOptimalDuration.toFixed(2)}`}
+                subValue={`Avg: ${formatCurrency(stats.avgPnlOptimalDuration)}`}
                 icon={BarChart} 
                 valueClassName={stats.avgPnlOptimalDuration > 0 ? 'text-success' : 'text-destructive'}
             />
             <StatCard 
                 title="Best Session" 
                 value={stats.bestSession} 
-                subValue={`Avg: $${stats.avgPnlBestSession.toFixed(2)}`}
+                subValue={`Avg: ${formatCurrency(stats.avgPnlBestSession)}`}
                 icon={Trophy} 
                 valueClassName={stats.avgPnlBestSession > 0 ? 'text-success' : 'text-destructive'}
             />
