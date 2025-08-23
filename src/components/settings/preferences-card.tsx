@@ -7,17 +7,42 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useStreamerMode } from '@/contexts/streamer-mode-context';
-import { useGeneralSettings } from '@/hooks/use-general-settings';
+import { useGeneralSettings, type GeneralSettings } from '@/hooks/use-general-settings';
 import { Skeleton } from '../ui/skeleton';
+import { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
+import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function PreferencesCard() {
     const { setTheme, theme } = useTheme();
     const { isStreamerMode, toggleStreamerMode } = useStreamerMode();
     const { settings, updateSettings, isLoaded } = useGeneralSettings();
     
+    const [localSettings, setLocalSettings] = useState<GeneralSettings>(settings);
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if(isLoaded) {
+            setLocalSettings(settings);
+        }
+    }, [isLoaded, settings]);
+
     const handleCurrencyChange = (value: string) => {
-        updateSettings({ ...settings, currency: value });
+        setLocalSettings(prev => ({...prev, currency: value}));
     }
+    
+    const handleSave = async () => {
+        setIsSaving(true);
+        await updateSettings(localSettings);
+        setIsSaving(false);
+    }
+    
+    const handleCancel = () => {
+        setLocalSettings(settings);
+    }
+
+    const hasChanged = settings.currency !== localSettings.currency;
 
     if (!isLoaded) {
          return (
@@ -56,19 +81,31 @@ export default function PreferencesCard() {
                         </SelectContent>
                     </Select>
                 </div>
-                 <div className="flex items-center justify-between">
-                    <Label htmlFor="currency-select">Currency</Label>
-                    <Select value={settings.currency} onValueChange={handleCurrencyChange}>
-                        <SelectTrigger id="currency-select" className="w-[180px]">
-                            <SelectValue placeholder="Select currency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="usd">USD ($)</SelectItem>
-                            <SelectItem value="inr">INR (₹)</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="flex items-center justify-between">
+                 <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="currency-select">Currency</Label>
+                        <Select value={localSettings.currency} onValueChange={handleCurrencyChange}>
+                            <SelectTrigger id="currency-select" className="w-[180px]">
+                                <SelectValue placeholder="Select currency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="usd">USD ($)</SelectItem>
+                                <SelectItem value="inr">INR (₹)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className={cn(
+                        "flex justify-end gap-2 transition-all duration-300 ease-in-out",
+                        hasChanged ? "max-h-10 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+                    )}>
+                        <Button variant="ghost" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
+                        <Button onClick={handleSave} disabled={isSaving}>
+                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save
+                        </Button>
+                    </div>
+                 </div>
+                <div className="flex items-center justify-between pt-2 border-t">
                     <Label htmlFor="streamer-mode-switch" className="flex flex-col gap-1">
                         <span>Streamer Mode</span>
                         <span className="text-xs text-muted-foreground">Hide sensitive information on screen.</span>
