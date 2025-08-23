@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Monitor, Moon, Settings, Sun, LogOut, Tv } from 'lucide-react';
 import { useStreamerMode } from "@/contexts/streamer-mode-context";
-import { ThemeSwitch } from "../ui/theme-switch";
+import SwitchButton from "../ui/switch-button";
 
 // --- Dropdown Primitives ---
 
@@ -164,16 +164,8 @@ export function UserMenu() {
 
       <DropdownMenuSeparator />
 
-        <div className="p-2 flex items-center justify-between">
-            <div className="px-1 text-xs font-medium text-zinc-500">Theme</div>
-             <ThemeSwitch 
-                variant="icon-click"
-                icons={[
-                    <Sun className="h-4 w-4" key="sun" />,
-                    <Moon className="h-4 w-4" key="moon" />,
-                    <Monitor className="h-4 w-4" key="system" />
-                ]}
-             />
+        <div className="p-2">
+            <SwitchButton size="sm" className="w-full" />
         </div>
 
 
