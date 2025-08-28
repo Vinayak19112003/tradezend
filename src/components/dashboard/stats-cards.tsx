@@ -5,7 +5,6 @@ import { useMemo, memo } from "react";
 import type { Trade } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { StreamerModeText } from "@/components/streamer-mode-text";
-import { isThisMonth, isThisWeek, getDay, parse, differenceInDays } from 'date-fns';
 import { 
     DollarSign, 
     CalendarDays, 
@@ -14,7 +13,6 @@ import {
     Target,
     TrendingUp, 
     Divide,
-    Clock,
 } from "lucide-react";
 import { useCurrency } from "@/contexts/currency-context";
 
@@ -72,23 +70,6 @@ export const StatsCards = memo(function StatsCards({ trades }: { trades: Trade[]
     const grossLoss = Math.abs(lossTrades.reduce((acc, t) => acc + (t.pnl || 0), 0));
     const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? Infinity : 0);
     
-    let totalDuration = 0;
-    let durationCount = 0;
-    trades.forEach(trade => {
-        if (trade.entryTime && trade.exitTime) {
-            try {
-                const entry = parse(`${trade.date.toISOString().split('T')[0]} ${trade.entryTime}`, 'yyyy-MM-dd HH:mm', new Date());
-                const exit = parse(`${trade.date.toISOString().split('T')[0]} ${trade.exitTime}`, 'yyyy-MM-dd HH:mm', new Date());
-                if (!isNaN(entry.getTime()) && !isNaN(exit.getTime())) {
-                    if (exit < entry) exit.setDate(exit.getDate() + 1); // Handle overnight
-                    totalDuration += (exit.getTime() - entry.getTime()) / (1000 * 60); // in minutes
-                    durationCount++;
-                }
-            } catch(e) { /* ignore parse errors */ }
-        }
-    });
-    const avgDurationMinutes = durationCount > 0 ? totalDuration / durationCount : 0;
-
     return {
       totalPnl,
       avgDailyPnl,
@@ -98,7 +79,6 @@ export const StatsCards = memo(function StatsCards({ trades }: { trades: Trade[]
       profitFactor: isFinite(profitFactor) ? profitFactor.toFixed(2) : "∞",
       totalWins: wins,
       totalLosses: losses,
-      avgTradeDuration: `${avgDurationMinutes.toFixed(0)} min`
     };
   }, [trades]);
 
@@ -150,12 +130,6 @@ export const StatsCards = memo(function StatsCards({ trades }: { trades: Trade[]
             subValue="Gross profit / Gross loss"
             icon={Divide}
             valueClassName={parseFloat(stats.profitFactor) >= 1 ? "text-success" : "text-destructive"}
-        />
-         <StatCard 
-            label="Avg Trade Duration" 
-            value={stats.avgTradeDuration}
-            subValue="Average holding time"
-            icon={Clock}
         />
     </div>
   );
