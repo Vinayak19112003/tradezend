@@ -61,15 +61,17 @@ const AnalysisCard = ({ title, stats }: { title: string, stats: DirectionalStats
                     gaugePrimaryColor="hsl(var(--success))"
                     gaugeSecondaryColor="hsl(var(--destructive))"
                 >
-                     <StreamerModeText className="text-xl font-bold text-foreground font-headline">
-                        {formatCurrency(stats.profit, {sign: true})}
-                     </StreamerModeText>
+                     <div className="text-center">
+                        <p className="text-xs text-muted-foreground">Profit</p>
+                         <StreamerModeText className="text-xl font-bold text-foreground font-headline">
+                            {formatCurrency(stats.profit, {sign: true})}
+                         </StreamerModeText>
+                     </div>
                 </GaugeChart>
                 <div className="flex w-full justify-between items-start pt-2">
                     <StatItem 
-                        label="Wins"
+                        label={`Wins (${stats.wins})`}
                         value={formatCurrency(stats.totalWinsAmount)}
-                        subValue={`(${stats.wins} trades)`}
                         valueClassName="text-success"
                     />
                     <StatItem 
@@ -77,9 +79,8 @@ const AnalysisCard = ({ title, stats }: { title: string, stats: DirectionalStats
                         value={`${stats.winRate.toFixed(1)}%`}
                     />
                      <StatItem 
-                        label="Losses"
+                        label={`Losses (${stats.losses})`}
                         value={formatCurrency(Math.abs(stats.totalLossesAmount))}
-                        subValue={`(${stats.losses} trades)`}
                         valueClassName="text-destructive"
                     />
                 </div>
@@ -102,21 +103,22 @@ const ProfitabilityCard = ({ winRate, wins, losses }: { winRate: number, wins: n
                     gaugePrimaryColor="hsl(var(--success))"
                     gaugeSecondaryColor="hsl(var(--destructive))"
                 >
-                     <span className="text-xl font-bold text-foreground font-headline">
-                        {wins + losses}
-                     </span>
+                    <div className="text-center">
+                        <p className="text-xs text-muted-foreground">Total Trades</p>
+                        <span className="text-xl font-bold text-foreground font-headline">
+                            {wins + losses}
+                        </span>
+                    </div>
                 </GaugeChart>
                  <div className="flex w-full justify-around items-start pt-2">
                     <StatItem 
-                        label="Win Rate"
+                        label={`Wins: ${wins}`}
                         value={`${winRate.toFixed(1)}%`}
-                        subValue={`Wins: ${wins}`}
                         valueClassName="text-success"
                     />
                      <StatItem 
-                        label="Loss Rate"
+                        label={`Losses: ${losses}`}
                         value={`${(100 - winRate).toFixed(1)}%`}
-                        subValue={`Losses: ${losses}`}
                         valueClassName="text-destructive"
                     />
                 </div>
