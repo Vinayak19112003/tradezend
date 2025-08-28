@@ -3,11 +3,12 @@
 
 import { useMemo } from 'react';
 import { type Trade } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GaugeChart } from '@/components/ui/gauge-chart';
 import { useCurrency } from '@/contexts/currency-context';
 import { StreamerModeText } from '../streamer-mode-text';
 import { cn } from '@/lib/utils';
+import { InteractiveCard } from '../ui/interactive-card';
 
 type DirectionalStats = {
     profit: number;
@@ -23,6 +24,7 @@ const calculateStats = (trades: Trade[]): DirectionalStats => {
     const losses = trades.filter(t => t.result === 'Loss');
     const totalWinsAmount = wins.reduce((sum, t) => sum + (t.pnl || 0), 0);
     const totalLossesAmount = losses.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    const totalTrades = wins.length + losses.length;
 
     return {
         profit: totalWinsAmount + totalLossesAmount,
@@ -30,14 +32,14 @@ const calculateStats = (trades: Trade[]): DirectionalStats => {
         totalWinsAmount,
         losses: losses.length,
         totalLossesAmount,
-        winRate: wins.length + losses.length > 0 ? (wins.length / (wins.length + losses.length)) * 100 : 0,
+        winRate: totalTrades > 0 ? (wins.length / totalTrades) * 100 : 0,
     };
 };
 
 const StatItem = ({ label, value, subValue, valueClassName }: { label: string, value: string, subValue?: string, valueClassName?: string }) => (
     <div className="flex-1 text-center">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className={cn("text-base font-semibold", valueClassName)}>{value}</p>
+        <p className={cn("text-lg font-semibold font-headline", valueClassName)}>{value}</p>
         {subValue && <StreamerModeText as="p" className="text-xs text-muted-foreground">{subValue}</StreamerModeText>}
     </div>
 );
@@ -49,17 +51,15 @@ const AnalysisCard = ({ title, stats }: { title: string, stats: DirectionalStats
     const profitPercentage = totalAmount > 0 ? (stats.totalWinsAmount / totalAmount) * 100 : 0;
     
     return (
-        <Card>
+        <InteractiveCard>
             <CardHeader className="items-center pb-2">
                 <CardTitle className="text-base font-semibold">{title}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
                 <GaugeChart 
                     value={profitPercentage} 
-                    label="Profit" 
                     gaugePrimaryColor="hsl(var(--success))"
                     gaugeSecondaryColor="hsl(var(--destructive))"
-                    showValue
                 >
                      <StreamerModeText className="text-3xl font-bold text-foreground font-headline">
                         {formatCurrency(stats.profit, {sign: true})}
@@ -67,8 +67,9 @@ const AnalysisCard = ({ title, stats }: { title: string, stats: DirectionalStats
                 </GaugeChart>
                 <div className="flex w-full justify-between items-start pt-2">
                     <StatItem 
-                        label={`Wins (${stats.wins})`}
+                        label="Wins"
                         value={formatCurrency(stats.totalWinsAmount)}
+                        subValue={`(${stats.wins} trades)`}
                         valueClassName="text-success"
                     />
                     <StatItem 
@@ -76,20 +77,21 @@ const AnalysisCard = ({ title, stats }: { title: string, stats: DirectionalStats
                         value={`${stats.winRate.toFixed(1)}%`}
                     />
                      <StatItem 
-                        label={`Losses (${stats.losses})`}
+                        label="Losses"
                         value={formatCurrency(Math.abs(stats.totalLossesAmount))}
+                        subValue={`(${stats.losses} trades)`}
                         valueClassName="text-destructive"
                     />
                 </div>
             </CardContent>
-        </Card>
+        </InteractiveCard>
     )
 };
 
 
 const ProfitabilityCard = ({ winRate, wins, losses }: { winRate: number, wins: number, losses: number }) => {
     return (
-        <Card>
+        <InteractiveCard>
             <CardHeader className="items-center pb-2">
                 <CardTitle className="text-base font-semibold">Profitability</CardTitle>
             </CardHeader>
@@ -113,13 +115,13 @@ const ProfitabilityCard = ({ winRate, wins, losses }: { winRate: number, wins: n
                     />
                      <StatItem 
                         label="Loss Rate"
-                        value={`${(100-winRate).toFixed(1)}%`}
+                        value={`${(100 - winRate).toFixed(1)}%`}
                         subValue={`Losses: ${losses}`}
                         valueClassName="text-destructive"
                     />
                 </div>
             </CardContent>
-        </Card>
+        </InteractiveCard>
     );
 };
 

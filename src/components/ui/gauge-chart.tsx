@@ -59,8 +59,7 @@ export function GaugeChart({
           }}
         />
       </svg>
-      <div className="absolute bottom-0 flex flex-col items-center justify-center h-full">
-        {label && <p className="text-xs text-muted-foreground">{label}</p>}
+      <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
         {children || (
           <motion.span
             className="text-3xl font-bold text-foreground font-headline"
@@ -71,6 +70,7 @@ export function GaugeChart({
             {showValue && `${Math.round(percentage)}%`}
           </motion.span>
         )}
+        {label && <p className="text-xs text-muted-foreground">{label}</p>}
       </div>
     </div>
   );
