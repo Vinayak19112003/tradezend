@@ -26,6 +26,7 @@ const AITradeSchema = TradeSchema.omit({id: true}).extend({
 const ImportTradesInputSchema = z.object({
   fileDataUri: z.string().describe("A file containing trade data, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'. The file can be a CSV, PDF, or an image of trades."),
   accountId: z.string().describe("The ID of the account to which these trades should be assigned."),
+  initialBalance: z.number().describe("The initial balance of the selected trading account."),
 });
 export type ImportTradesInput = z.infer<typeof ImportTradesInputSchema>;
 
@@ -62,8 +63,9 @@ You must intelligently map the columns or text to the required trade fields. The
 
 For each trade, you must provide values for all the fields in the output schema.
 
-**CRITICAL INSTRUCTION:**
+**CRITICAL INSTRUCTIONS:**
 - **accountId**: You MUST use the following account ID for every single trade object you generate: \`{{{accountId}}}\`. This field must not be empty.
+- **accountSize**: You MUST use the following account size for every single trade object you generate: \`{{{initialBalance}}}\`. This is the initial balance of the account and should be applied to every trade.
 
 **Handling Missing Data:**
 - **strategy**: If a strategy is not specified, you MUST default to the string 'Imported'.
@@ -83,7 +85,6 @@ For each trade, you must provide values for all the fields in the output schema.
 - **rulesFollowed**: Default to an empty array \`[]\` if not present.
 - **notes**: Default to 'Imported via AI' if not present.
 - **screenshotURL**: Default to an empty string \`""\` if not present.
-- **accountSize**: Default to 0 if not present.
 - **riskPercentage**: Default to 0 if not present.
 - **session**: If not specified, infer from the time of day if possible (e.g., London, New York, Asian). Must be one of "London", "New York", "Asian".
 - **keyLevel**: If not specified, default to an empty string "".

@@ -35,7 +35,7 @@ export default function ImportTrades({ onImport, addMultipleTrades }: ImportTrad
   const [file, setFile] = useState<File | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const { selectedAccountId } = useAccountContext();
+  const { accounts, selectedAccountId } = useAccountContext();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -44,7 +44,9 @@ export default function ImportTrades({ onImport, addMultipleTrades }: ImportTrad
   };
 
   const handleImport = async () => {
-    if (!file || !user || !selectedAccountId) {
+    const selectedAccount = accounts.find(acc => acc.id === selectedAccountId);
+
+    if (!file || !user || !selectedAccount) {
       toast({
         variant: "destructive",
         title: "Import Failed",
@@ -70,7 +72,11 @@ export default function ImportTrades({ onImport, addMultipleTrades }: ImportTrad
         }
 
         try {
-            const result = await importTrades({ fileDataUri, accountId: selectedAccountId });
+            const result = await importTrades({ 
+                fileDataUri, 
+                accountId: selectedAccountId,
+                initialBalance: selectedAccount.initialBalance,
+            });
             const tradesFromAI = result.trades;
 
             if (!tradesFromAI || tradesFromAI.length === 0) {
