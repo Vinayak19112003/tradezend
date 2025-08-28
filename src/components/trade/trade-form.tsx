@@ -680,7 +680,7 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
                     <FormItem>
                     <FormLabel>Account Size ({currencySymbol})</FormLabel>
                     <FormControl>
-                        <Input type="number" {...field} className={cn("bg-muted", isStreamerMode && "blur-sm")} readOnly/>
+                        <Input type="number" {...field} className={cn(isStreamerMode && "blur-sm")} />
                     </FormControl>
                      <FormDescription>The account balance before this trade.</FormDescription>
                     <FormMessage />
@@ -1039,4 +1039,3 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
     </Form>
   );
 }
-
