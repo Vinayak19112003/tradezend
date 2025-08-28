@@ -203,6 +203,17 @@ export function TradeForm({
   const accountId = watch("accountId");
   const direction = watch("direction");
 
+  useEffect(() => {
+    if (trade) {
+        setValue("accountSize", trade.accountSize);
+    } else {
+        const selectedAccount = accounts.find((acc: any) => acc.id === accountId);
+        if (selectedAccount) {
+            setValue("accountSize", selectedAccount.initialBalance);
+        }
+    }
+  }, [accountId, accounts, setValue, trade]);
+
   const {
     previewUrl,
     fileInputRef,
@@ -669,7 +680,7 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
                     <FormItem>
                     <FormLabel>Account Size ({currencySymbol})</FormLabel>
                     <FormControl>
-                        <Input type="number" {...field} className={cn(isStreamerMode && "blur-sm")} />
+                        <Input type="number" {...field} className={cn("bg-muted", isStreamerMode && "blur-sm")} readOnly/>
                     </FormControl>
                      <FormDescription>The account balance before this trade.</FormDescription>
                     <FormMessage />
@@ -1028,3 +1039,4 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
     </Form>
   );
 }
+
