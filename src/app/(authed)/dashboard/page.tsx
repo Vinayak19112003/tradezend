@@ -20,6 +20,7 @@ import type { Trade } from "@/lib/types";
 
 // Dynamically import components to improve initial page load performance.
 const SummaryBanner = dynamic(() => import('@/components/dashboard/summary-banner').then(mod => mod.SummaryBanner), { ssr: false, loading: () => <Skeleton className="h-28" /> });
+const DirectionalAnalysis = dynamic(() => import('@/components/dashboard/directional-analysis'), { ssr: false, loading: () => <Skeleton className="h-[250px] w-full" /> });
 const EquityCurveChart = dynamic(() => import('@/components/dashboard/equity-curve-chart').then(mod => mod.EquityCurveChart), { ssr: false, loading: () => <Skeleton className="h-[420px]" /> });
 const MonthlyCalendar = dynamic(() => import('@/components/dashboard/monthly-calendar'), { ssr: false, loading: () => <Skeleton className="h-[600px]" /> });
 
@@ -91,6 +92,7 @@ export default function DashboardPage({ trades: allTrades }: DashboardPageProps)
       
       <SummaryBanner trades={summaryTrades} />
       <StatsCards trades={filteredTrades} />
+      <DirectionalAnalysis trades={filteredTrades} />
       
       <div className="grid grid-cols-1 gap-4 md:gap-6">
           <MonthlyCalendar trades={allTrades} onDateSelect={handleCalendarDateSelect} />
