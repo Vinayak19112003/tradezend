@@ -653,7 +653,7 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
               <FormItem>
                 <FormLabel>Risk/Reward (RR)</FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} readOnly className="bg-muted"/>
+                  <Input type="number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
