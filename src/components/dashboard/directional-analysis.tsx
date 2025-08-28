@@ -61,7 +61,7 @@ const AnalysisCard = ({ title, stats }: { title: string, stats: DirectionalStats
                     gaugePrimaryColor="hsl(var(--success))"
                     gaugeSecondaryColor="hsl(var(--destructive))"
                 >
-                     <StreamerModeText className="text-2xl font-bold text-foreground font-headline">
+                     <StreamerModeText className="text-xl font-bold text-foreground font-headline">
                         {formatCurrency(stats.profit, {sign: true})}
                      </StreamerModeText>
                 </GaugeChart>
@@ -102,7 +102,7 @@ const ProfitabilityCard = ({ winRate, wins, losses }: { winRate: number, wins: n
                     gaugePrimaryColor="hsl(var(--success))"
                     gaugeSecondaryColor="hsl(var(--destructive))"
                 >
-                     <span className="text-2xl font-bold text-foreground font-headline">
+                     <span className="text-xl font-bold text-foreground font-headline">
                         {wins + losses}
                      </span>
                 </GaugeChart>

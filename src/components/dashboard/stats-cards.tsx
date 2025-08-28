@@ -32,7 +32,7 @@ const StatCard = memo(function StatCard({ label, value, subValue, icon: Icon, va
                 <Icon className="h-4 w-4" />
             </div>
             <div>
-                <p className={cn("text-2xl font-bold font-headline", valueClassName)}>
+                <p className={cn("text-xl font-bold font-headline", valueClassName)}>
                     <StreamerModeText>{value}</StreamerModeText>
                 </p>
                 {subValue && <p className="text-xs text-muted-foreground"><StreamerModeText>{subValue}</StreamerModeText></p>}
