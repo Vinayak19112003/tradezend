@@ -1,34 +1,57 @@
-
 'use client';
 
 /**
- * @fileoverview This file defines the user Settings page.
- * It provides a centralized hub for managing user profile information,
- * application preferences, and security settings.
+ * @fileoverview Settings page with dynamic imports for better performance
+ *
+ * This page loads settings cards dynamically to reduce initial bundle size
+ * and improve page load speed.
  */
 
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import UserProfileCard from '@/components/settings/user-profile-card';
-import PreferencesCard from '@/components/settings/preferences-card';
-import SecurityCard from '@/components/settings/security-card';
-import { ManageAccountsCard } from '@/components/settings/manage-accounts-card';
-import { ManageStrategiesCard } from '@/components/settings/manage-strategies-card';
+import { Skeleton } from '@/components/ui/skeleton';
 
+// Dynamic imports for all settings cards - loaded only when needed
+const UserProfileCard = dynamic(() => import('@/components/settings/user-profile-card'), {
+    ssr: false,
+    loading: () => <Skeleton className="h-48 w-full" />
+});
+
+const PreferencesCard = dynamic(() => import('@/components/settings/preferences-card'), {
+    ssr: false,
+    loading: () => <Skeleton className="h-64 w-full" />
+});
+
+const SecurityCard = dynamic(() => import('@/components/settings/security-card'), {
+    ssr: false,
+    loading: () => <Skeleton className="h-48 w-full" />
+});
+
+const ManageAccountsCard = dynamic(() => import('@/components/settings/manage-accounts-card').then(mod => ({ default: mod.ManageAccountsCard })), {
+    ssr: false,
+    loading: () => <Skeleton className="h-64 w-full" />
+});
+
+const ManageStrategiesCard = dynamic(() => import('@/components/settings/manage-strategies-card').then(mod => ({ default: mod.ManageStrategiesCard })), {
+    ssr: false,
+    loading: () => <Skeleton className="h-64 w-full" />
+});
 
 interface SettingsPageProps {
   // This prop is used to satisfy the page component signature in MainLayout
-  trades: never; 
+  trades: never;
 }
 
 export default function SettingsPage({ trades }: SettingsPageProps) {
     const router = useRouter();
-    
+
     const handleBack = () => {
         router.back();
     };
-    
+
     return (
         <>
             <div className="flex items-center gap-4 mb-4">
@@ -40,17 +63,23 @@ export default function SettingsPage({ trades }: SettingsPageProps) {
                     Settings
                 </h1>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                <div className="lg:col-span-2 grid gap-6">
-                    <PreferencesCard />
-                    <ManageStrategiesCard />
-                    <SecurityCard />
+            <Suspense fallback={
+                <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-                <div className="lg:col-span-1 grid gap-6">
-                    <UserProfileCard />
-                    <ManageAccountsCard />
+            }>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                    <div className="lg:col-span-2 grid gap-6">
+                        <PreferencesCard />
+                        <ManageStrategiesCard />
+                        <SecurityCard />
+                    </div>
+                    <div className="lg:col-span-1 grid gap-6">
+                        <UserProfileCard />
+                        <ManageAccountsCard />
+                    </div>
                 </div>
-            </div>
+            </Suspense>
         </>
     );
 }
