@@ -23,10 +23,12 @@ import { getStorage, FirebaseStorage } from "firebase/storage";
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyAkbLBTJo9-6OSH009jqw0dtx-xKxjE_VQ",
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "tradevision-journal-pss69.firebaseapp.com",
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || "https://tradevision-journal-pss69-default-rtdb.firebaseio.com",
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "tradevision-journal-pss69",
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "tradevision-journal-pss69.firebasestorage.app",
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "790628334512",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:790628334512:web:283fbaee6bb6aa1957b475"
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:790628334512:web:283fbaee6bb6aa1957b475",
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-CXZ90DLRPF"
 };
 
 /**

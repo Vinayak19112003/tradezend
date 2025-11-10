@@ -25,9 +25,6 @@ const nextConfig: NextConfig = {
   // Optimize production builds
   productionBrowserSourceMaps: false, // Disable source maps in production for smaller bundles
 
-  // Configure SWC minification for faster builds
-  swcMinify: true,
-
   // Experimental features for better performance
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', '@radix-ui/react-icons'],
