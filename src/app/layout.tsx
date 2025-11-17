@@ -5,7 +5,6 @@ import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/auth-context';
 import { StreamerModeProvider } from '@/contexts/streamer-mode-context';
-import { Inter, Space_Grotesk } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { CurrencyProvider } from '@/contexts/currency-context';
 
@@ -19,18 +18,6 @@ export const viewport: Viewport = {
   initialScale: 1.0,
 };
 
-const fontBody = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-body',
-});
-
-const fontHeadline = Space_Grotesk({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-headline',
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,8 +25,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
-      <body className={cn("font-body antialiased", fontBody.variable, fontHeadline.variable)}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Space+Grotesk:wght@300..700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className={cn("font-body antialiased")}>
         <AuthProvider>
           <ThemeProvider
             attribute="class"

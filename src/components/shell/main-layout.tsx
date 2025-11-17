@@ -1,32 +1,75 @@
 
 'use client';
 
-import { useState, useEffect } from "react";
+/**
+ * @fileOverview Main Layout Component with Dynamic Page Loading
+ *
+ * This component uses dynamic imports to load pages only when needed,
+ * significantly reducing the initial bundle size and improving performance.
+ */
+
+import { useState, useEffect, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Trade } from "@/lib/types";
 import { useTrades } from "@/contexts/trades-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Home, LineChart, Package, Users, Settings } from 'lucide-react';
-import DashboardPage from "@/app/(authed)/dashboard/page";
-import JournalPage from "@/app/(authed)/journal/page";
-import AnalyticsPage from "@/app/(authed)/analytics/page";
-import PerformancePage from "@/app/(authed)/performance/page";
-import SettingsPage from "@/app/(authed)/settings/page";
+import { Loader2 } from 'lucide-react';
+
+// Dynamic imports for all pages - loads only when needed
+const DashboardPage = dynamic(() => import("@/app/(authed)/dashboard/page"), {
+    ssr: false,
+    loading: () => <PageLoadingSkeleton />
+});
+
+const JournalPage = dynamic(() => import("@/app/(authed)/journal/page"), {
+    ssr: false,
+    loading: () => <PageLoadingSkeleton />
+});
+
+const AnalyticsPage = dynamic(() => import("@/app/(authed)/analytics/page"), {
+    ssr: false,
+    loading: () => <PageLoadingSkeleton />
+});
+
+const PerformancePage = dynamic(() => import("@/app/(authed)/performance/page"), {
+    ssr: false,
+    loading: () => <PageLoadingSkeleton />
+});
+
+const SettingsPage = dynamic(() => import("@/app/(authed)/settings/page"), {
+    ssr: false,
+    loading: () => <PageLoadingSkeleton />
+});
 
 const NAV_TABS = [
-    { value: 'dashboard', label: 'Dashboard', icon: Home, component: DashboardPage },
-    { value: 'journal', label: 'Journal', icon: Package, component: JournalPage },
-    { value: 'analytics', label: 'Analytics', icon: LineChart, component: AnalyticsPage },
-    { value: 'performance', label: 'Performance', icon: Users, component: PerformancePage },
+    { value: 'dashboard', label: 'Dashboard' },
+    { value: 'journal', label: 'Journal' },
+    { value: 'analytics', label: 'Analytics' },
+    { value: 'performance', label: 'Performance' },
 ];
 
-const TabSkeleton = () => (
+/**
+ * Loading skeleton for page transitions
+ */
+const PageLoadingSkeleton = () => (
     <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
+        <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+        <Skeleton className="h-32 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+        </div>
         <Skeleton className="h-64 w-full" />
     </div>
-)
+);
+
+const TabSkeleton = () => <PageLoadingSkeleton />;
 
 export default function MainLayout() {
     const { trades, isTradesLoading } = useTrades();
@@ -50,15 +93,34 @@ export default function MainLayout() {
         router.push(`${pathname}${query}`);
     };
 
-    const CurrentPageComponent = NAV_TABS.find(tab => tab.value === activeTab)?.component || DashboardPage;
-    
+    // Render settings page separately
     if (activeTab === 'settings') {
          return (
              <div className="mt-4">
-                {isTradesLoading ? <TabSkeleton /> : <SettingsPage trades={trades} />}
+                <Suspense fallback={<TabSkeleton />}>
+                    {isTradesLoading ? <TabSkeleton /> : <SettingsPage trades={trades} />}
+                </Suspense>
              </div>
          )
     }
+
+    // Render page component based on active tab
+    const renderPageComponent = () => {
+        if (isTradesLoading) return <TabSkeleton />;
+
+        switch(activeTab) {
+            case 'dashboard':
+                return <DashboardPage trades={trades} />;
+            case 'journal':
+                return <JournalPage trades={trades} />;
+            case 'analytics':
+                return <AnalyticsPage trades={trades} />;
+            case 'performance':
+                return <PerformancePage trades={trades} />;
+            default:
+                return <DashboardPage trades={trades} />;
+        }
+    };
 
     return (
         <Tabs value={activeTab} onValueChange={handleTabChange}>
@@ -74,9 +136,11 @@ export default function MainLayout() {
                     </TabsList>
                 </div>
             </div>
-            
-            <TabsContent value={activeTab} forceMount className="mt-4">
-               {isTradesLoading ? <TabSkeleton /> : <CurrentPageComponent trades={trades} />}
+
+            <TabsContent value={activeTab} className="mt-4">
+                <Suspense fallback={<TabSkeleton />}>
+                    {renderPageComponent()}
+                </Suspense>
             </TabsContent>
         </Tabs>
     );

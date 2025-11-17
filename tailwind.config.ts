@@ -19,8 +19,8 @@ export default {
         "2xl": "1400px",
       },
       fontFamily: {
-        body: ['var(--font-body)', ...defaultTheme.fontFamily.sans],
-        headline: ['var(--font-headline)', ...defaultTheme.fontFamily.sans],
+        body: ['Inter', ...defaultTheme.fontFamily.sans],
+        headline: ['Space Grotesk', ...defaultTheme.fontFamily.sans],
         code: ['monospace'],
       },
       colors: {
