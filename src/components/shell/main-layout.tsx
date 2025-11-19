@@ -98,7 +98,7 @@ export default function MainLayout() {
          return (
              <div className="mt-4">
                 <Suspense fallback={<TabSkeleton />}>
-                    {isTradesLoading ? <TabSkeleton /> : <SettingsPage trades={trades} />}
+                    {isTradesLoading ? <TabSkeleton /> : <SettingsPage />}
                 </Suspense>
              </div>
          )
@@ -110,15 +110,15 @@ export default function MainLayout() {
 
         switch(activeTab) {
             case 'dashboard':
-                return <DashboardPage trades={trades} />;
+                return <DashboardPage />;
             case 'journal':
-                return <JournalPage trades={trades} />;
+                return <JournalPage />;
             case 'analytics':
-                return <AnalyticsPage trades={trades} />;
+                return <AnalyticsPage />;
             case 'performance':
-                return <PerformancePage trades={trades} />;
+                return <PerformancePage />;
             default:
-                return <DashboardPage trades={trades} />;
+                return <DashboardPage />;
         }
     };
 

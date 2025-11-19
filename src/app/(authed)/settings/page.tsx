@@ -40,12 +40,7 @@ const ManageStrategiesCard = dynamic(() => import('@/components/settings/manage-
     loading: () => <Skeleton className="h-64 w-full" />
 });
 
-interface SettingsPageProps {
-  // This prop is used to satisfy the page component signature in MainLayout
-  trades: never;
-}
-
-export default function SettingsPage({ trades }: SettingsPageProps) {
+export default function SettingsPage() {
     const router = useRouter();
 
     const handleBack = () => {

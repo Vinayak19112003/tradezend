@@ -36,7 +36,7 @@ const TabsTrigger = React.forwardRef<
     )}
     {...props}
   >
-    {props["data-state"] === "active" && (
+    {(props as any)["data-state"] === "active" && (
        <motion.span
           layoutId="bubble"
           className="absolute inset-0 z-10 bg-background shadow-sm"

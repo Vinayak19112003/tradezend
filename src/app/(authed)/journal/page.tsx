@@ -28,16 +28,12 @@ const ImportTrades = dynamic(() => import('@/components/journal/import-trades'),
 const ExportTrades = dynamic(() => import('@/components/journal/export-trades').then(mod => mod.ExportTrades), { ssr: false });
 const ClearAllTrades = dynamic(() => import('@/components/journal/clear-all-trades').then(mod => mod.ClearAllTrades), { ssr: false });
 
-interface JournalPageProps {
-  trades: Trade[];
-}
-
 /**
  * The main content component for the Trades page.
  * It is memoized to prevent re-renders unless its props change.
  */
-export default function JournalPage({ trades }: JournalPageProps) {
-    const { deleteTrade, deleteAllTrades, addMultipleTrades } = useTrades();
+export default function JournalPage() {
+    const { trades, deleteTrade, deleteAllTrades, addMultipleTrades } = useTrades();
     const { toast } = useToast();
     const { openForm } = useTradeForm();
     const { selectedAccountId } = useAccountContext();

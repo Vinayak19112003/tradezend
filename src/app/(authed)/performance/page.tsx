@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Trade } from "@/lib/types";
 import { useTradingRules } from "@/hooks/use-trading-rules";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTrades } from "@/contexts/trades-context";
 
 // Dynamically import tab content
 const RiskAnalysisTab = dynamic(() => import('@/components/performance/risk-analysis-tab'), { ssr: false, loading: () => <TabSkeleton /> });
@@ -27,15 +28,12 @@ const TabSkeleton = () => (
     </div>
 )
 
-interface PerformancePageProps {
-  trades: Trade[];
-}
-
 /**
  * The main component for the Performance page.
  * It handles fetching all trade data and passing it to the risk analysis components.
  */
-export default function PerformancePage({ trades }: PerformancePageProps) {
+export default function PerformancePage() {
+    const { trades } = useTrades();
     const { tradingRules } = useTradingRules();
     
     return (

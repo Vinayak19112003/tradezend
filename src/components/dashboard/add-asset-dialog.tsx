@@ -70,7 +70,7 @@ export function AddAssetDialog() {
             <h4 className="font-medium text-sm">Existing Assets</h4>
             <ScrollArea className="h-40 w-full rounded-md border p-2">
                 {isLoaded && assets.length > 0 ? (
-                    assets.map(asset => (
+                    assets.map((asset: string) => (
                         <div key={asset} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
                             <span className="text-sm font-medium">{asset}</span>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(asset)} disabled={isLoading}>

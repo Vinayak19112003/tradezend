@@ -62,8 +62,8 @@ export default memo(function PnlDistribution({ trades }: PnlDistributionProps) {
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
-            const winData = payload.find(p => p.dataKey === 'wins');
-            const lossData = payload.find(p => p.dataKey === 'losses');
+            const winData = payload.find((p: any) => p.dataKey === 'wins');
+            const lossData = payload.find((p: any) => p.dataKey === 'losses');
             return (
                 <div className="rounded-lg border bg-background p-2 shadow-sm text-sm">
                     <div className="font-bold mb-1">P&L Range: {currencySymbol}{label}</div>

@@ -72,14 +72,14 @@ export function AddStrategyDialog() {
             <h4 className="font-medium text-sm">Existing Strategies</h4>
              <AnimatedList
                 items={strategies}
-                renderItem={(strategy, index, isSelected) => (
+                renderItem={(strategy: unknown, index: number, isSelected: boolean) => (
                     <div className={cn("item", isSelected && "selected")}>
-                        <p className="item-text">{strategy}</p>
+                        <p className="item-text">{String(strategy)}</p>
                         <Button
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={(e) => handleDelete(e, strategy)}
+                            onClick={(e) => handleDelete(e, String(strategy))}
                             disabled={isLoading}
                         >
                             <Trash2 className="h-4 w-4" />

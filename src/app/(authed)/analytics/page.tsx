@@ -17,6 +17,7 @@ import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
 import type { Trade } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TradingModelPage from "./trading-model-view";
+import { useTrades } from "@/contexts/trades-context";
 
 // Dynamically import all charting components to reduce the initial bundle size.
 // Skeletons are shown as placeholders while the components load.
@@ -31,16 +32,13 @@ const PnlDistribution = dynamic(() => import('@/components/analysis/pnl-distribu
 const RMultipleDistribution = dynamic(() => import('@/components/analysis/r-multiple-distribution'), { ssr: false, loading: () => <Skeleton className="h-[400px]" /> });
 
 
-interface AnalyticsPageProps {
-  trades: Trade[];
-}
-
 /**
  * The main component for the Analysis page.
  * It handles fetching trade data for a specific date range and rendering
  * the various analysis components within a tabbed interface.
  */
-export default function AnalyticsPage({ trades: allTrades }: AnalyticsPageProps) {
+export default function AnalyticsPage() {
+    const { trades: allTrades } = useTrades();
     const [filteredTrades, setFilteredTrades] = useState<Trade[]>([]);
     
     const [dateRange, setDateRange] = useState<DateRange | undefined>({

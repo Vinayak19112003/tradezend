@@ -100,7 +100,7 @@ export default function ImportTrades({ onImport, addMultipleTrades }: ImportTrad
                 const CHUNK_SIZE = 30;
                 const chunks: string[][] = [];
                 for (let i = 0; i < newTicketIds.length; i += CHUNK_SIZE) {
-                    chunks.push(newTicketIds.slice(i, i + CHUNK_SIZE));
+                    chunks.push(newTicketIds.slice(i, i + CHUNK_SIZE).filter((id): id is string => id !== undefined));
                 }
 
                 const queryPromises = chunks.map(chunk => {

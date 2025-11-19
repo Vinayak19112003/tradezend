@@ -21,7 +21,7 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
     const { settings } = useGeneralSettings();
-    const currency = settings.currency === 'inr' ? 'inr' : 'usd';
+    const currency: Currency = settings.currency === 'inr' ? 'inr' : 'usd';
     const currencySymbol = CURRENCY_SYMBOLS[currency];
     
     const formatCurrency = (value: number, options: { sign?: boolean, decimals?: number } = {}) => {

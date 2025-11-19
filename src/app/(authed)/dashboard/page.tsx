@@ -17,6 +17,7 @@ import type { DateRange } from "react-day-picker";
 import { startOfMonth, endOfDay, isSameDay, subMonths } from "date-fns";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
 import type { Trade } from "@/lib/types";
+import { useTrades } from "@/contexts/trades-context";
 
 // Dynamically import components to improve initial page load performance.
 const SummaryBanner = dynamic(() => import('@/components/dashboard/summary-banner').then(mod => mod.SummaryBanner), { ssr: false, loading: () => <Skeleton className="h-28" /> });
@@ -24,15 +25,12 @@ const DirectionalAnalysis = dynamic(() => import('@/components/dashboard/directi
 const EquityCurveChart = dynamic(() => import('@/components/dashboard/equity-curve-chart').then(mod => mod.EquityCurveChart), { ssr: false, loading: () => <Skeleton className="h-[420px]" /> });
 const MonthlyCalendar = dynamic(() => import('@/components/dashboard/monthly-calendar'), { ssr: false, loading: () => <Skeleton className="h-[600px]" /> });
 
-interface DashboardPageProps {
-  trades: Trade[];
-}
-
 /**
  * The main component for the Dashboard page.
  * It manages fetching and filtering trade data to pass to its child components.
  */
-export default function DashboardPage({ trades: allTrades }: DashboardPageProps) {
+export default function DashboardPage() {
+    const { trades: allTrades } = useTrades();
   const [filteredTrades, setFilteredTrades] = useState<Trade[]>([]);
   
   // Default to showing last 3 months of data for a better initial view.

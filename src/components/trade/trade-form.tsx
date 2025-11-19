@@ -98,7 +98,7 @@ const ChecklistSection = ({ name, title, items, control }: { name: `modelFollowe
                                                     const currentValues = field.value || [];
                                                     return checked
                                                         ? field.onChange([...currentValues, item])
-                                                        : field.onChange(currentValues.filter((value) => value !== item));
+                                                        : field.onChange(currentValues.filter((value: string) => value !== item));
                                                 }}
                                             />
                                         </FormControl>
@@ -150,8 +150,8 @@ export function TradeForm({
           exitTime: trade.exitTime ?? "",
           notes: trade.notes ?? "",
           ticket: trade.ticket ?? "",
-          preTradeEmotion: trade.preTradeEmotion ?? "",
-          postTradeEmotion: trade.postTradeEmotion ?? "",
+          preTradeEmotion: trade.preTradeEmotion ?? undefined,
+          postTradeEmotion: trade.postTradeEmotion ?? undefined,
           marketContext: trade.marketContext ?? "",
           entryReason: trade.entryReason ?? "",
           tradeFeelings: trade.tradeFeelings ?? "",
@@ -262,7 +262,7 @@ export function TradeForm({
           target: {
             files: [file],
           },
-        } as React.ChangeEvent<HTMLInputElement>;
+        } as unknown as React.ChangeEvent<HTMLInputElement>;
         handleUploaderFileChange(fakeEvent);
       }
     },
@@ -308,12 +308,12 @@ export function TradeForm({
     }
 }, [accountSize, riskPercentage, rr, result, setValue]);
 
-const mistakeOptions = useMemo((): MultiSelectOption[] => 
-    mistakeTags.map((tag, index) => ({ id: index, name: tag, value: tag })), 
+const mistakeOptions = useMemo((): MultiSelectOption[] =>
+    mistakeTags.map((tag: string, index: number) => ({ id: index, name: tag, value: tag })),
 [mistakeTags]);
 
-const ruleOptions = useMemo((): MultiSelectOption[] => 
-    tradingRules.map((rule, index) => ({ id: index, name: rule, value: rule })),
+const ruleOptions = useMemo((): MultiSelectOption[] =>
+    tradingRules.map((rule: string, index: number) => ({ id: index, name: rule, value: rule })),
 [tradingRules]);
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
@@ -479,7 +479,7 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {assets.map(asset => (
+                        {assets.map((asset: string) => (
                             <SelectItem key={asset} value={asset}>{asset}</SelectItem>
                         ))}
                       </SelectContent>
@@ -503,7 +503,7 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
                     </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                    {strategies.map(strategy => (
+                    {strategies.map((strategy: string) => (
                         <SelectItem key={strategy} value={strategy}>{strategy}</SelectItem>
                     ))}
                 </SelectContent>

@@ -70,7 +70,7 @@ export function AddMistakeTagDialog() {
             <h4 className="font-medium text-sm">Existing Tags</h4>
             <ScrollArea className="h-40 w-full rounded-md border p-2">
                 {isLoaded && mistakeTags.length > 0 ? (
-                    mistakeTags.map(tag => (
+                    mistakeTags.map((tag: string) => (
                         <div key={tag} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md">
                             <span className="text-sm font-medium">{tag}</span>
                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(tag)} disabled={isLoading}>
