@@ -1,14 +1,9 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { db } from '@/lib/firebase';
-import { doc, updateDoc, onSnapshot, setDoc, getDoc } from "firebase/firestore";
-import { useToast } from './use-toast';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from './use-auth';
-
-const SETTINGS_COLLECTION = 'settings';
-const SETTINGS_DOC_ID = 'userConfig';
+import { useToast } from './use-toast';
 
 type Targets = {
     profit: number;
@@ -17,70 +12,64 @@ type Targets = {
 
 export function useTargets() {
     const { user } = useAuth();
+    const { toast } = useToast();
     const [targets, setTargets] = useState<Targets>({ profit: 0, loss: 0 });
     const [isLoaded, setIsLoaded] = useState(false);
-    const { toast } = useToast();
-
-    const getSettingsDocRef = useCallback(() => {
-        if (!user || !db) return null;
-        return doc(db, 'users', user.uid, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
-    }, [user]);
 
     useEffect(() => {
         if (!user) {
+            setTargets({ profit: 0, loss: 0 });
             setIsLoaded(true);
             return;
         }
 
-        const docRef = getSettingsDocRef();
-        if (!docRef) {
-            setIsLoaded(true);
-            return;
-        }
+        const fetchTargets = async () => {
+            const { data, error } = await supabase
+                .from('user_settings')
+                .select('daily_target, weekly_target, monthly_target')
+                .eq('user_id', user.id)
+                .maybeSingle();
 
-        const unsubscribe = onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
+            if (error) {
+                console.error('Error fetching targets:', error);
+            }
+
+            if (data) {
                 setTargets({
-                    profit: data.targetProfit || 0,
-                    loss: data.targetLoss || 0,
+                    profit: data.daily_target || 0,
+                    loss: data.weekly_target || 0,
                 });
             }
-            setIsLoaded(true);
-        }, (error) => {
-            console.error("Error with targets snapshot:", error);
-            toast({
-                variant: "destructive",
-                title: "Sync Error",
-                description: `Could not load targets.`,
-            });
-            setIsLoaded(true);
-        });
 
-        return () => unsubscribe();
-    }, [user, getSettingsDocRef, toast]);
+            setIsLoaded(true);
+        };
 
-    const updateTargets = async (newTargets: Partial<Targets>) => {
-        const docRef = getSettingsDocRef();
-        if (!docRef) {
+        fetchTargets();
+    }, [user]);
+
+    const updateTargets = useCallback(async (newTargets: Partial<Targets>) => {
+        if (!user) {
             toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to update targets.' });
             return;
         }
 
         try {
-            const docSnap = await getDoc(docRef);
-            const updateData: { [key: string]: number } = {};
-            if (newTargets.profit !== undefined) updateData.targetProfit = newTargets.profit;
-            if (newTargets.loss !== undefined) updateData.targetLoss = newTargets.loss;
+            const updateData: any = {};
+            if (newTargets.profit !== undefined) updateData.daily_target = newTargets.profit;
+            if (newTargets.loss !== undefined) updateData.weekly_target = newTargets.loss;
 
-            if (docSnap.exists()) {
-                await updateDoc(docRef, updateData);
-            } else {
-                // This case should ideally be handled by the useJournalSettings initialization,
-                // but as a fallback, we create/merge the document.
-                await setDoc(docRef, updateData, { merge: true });
-            }
+            const { error } = await supabase
+                .from('user_settings')
+                .upsert({
+                    user_id: user.id,
+                    ...updateData,
+                }, {
+                    onConflict: 'user_id'
+                });
 
+            if (error) throw error;
+
+            setTargets(prev => ({ ...prev, ...newTargets }));
             toast({
                 title: "Targets Updated",
                 description: "Your profit and loss targets have been saved.",
@@ -93,7 +82,7 @@ export function useTargets() {
                 description: "Could not save your targets.",
             });
         }
-    };
+    }, [user, toast]);
 
     return { targets, updateTargets, isLoaded };
 }

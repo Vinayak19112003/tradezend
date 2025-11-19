@@ -25,7 +25,7 @@ export default function UserProfileCard() {
                     {user?.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                 </Avatar>
-                <p className="text-sm font-medium">{user?.displayName || 'Anonymous'}</p>
+                <p className="text-sm font-medium">{user?.email?.split('@')[0] || 'Anonymous'}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
             </CardHeader>
             <CardContent>

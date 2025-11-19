@@ -1,21 +1,80 @@
-
 "use client";
 
-import { useCallback } from 'react';
-import useJournalSettings from './use-journal-settings';
-import { DEFAULT_GENERAL_SETTINGS } from '@/lib/constants';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from './use-auth';
+import { useToast } from './use-toast';
 
 export type GeneralSettings = {
-    currency: string;
+    currency: 'usd' | 'inr';
+    streamerMode?: boolean;
 };
 
 export function useGeneralSettings() {
-    const { items: settings, updateWholeObject, isLoaded } = useJournalSettings('generalSettings', DEFAULT_GENERAL_SETTINGS);
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const [settings, setSettings] = useState<GeneralSettings>({ currency: 'usd', streamerMode: false });
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    const updateSettings = useCallback(async (newSettings: GeneralSettings) => {
-        const success = await updateWholeObject(newSettings);
-        return success;
-    }, [updateWholeObject]);
+    useEffect(() => {
+        if (!user) {
+            setSettings({ currency: 'usd', streamerMode: false });
+            setIsLoaded(true);
+            return;
+        }
+
+        const fetchSettings = async () => {
+            const { data, error } = await supabase
+                .from('user_settings')
+                .select('currency, streamer_mode')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (error) {
+                console.error('Error fetching settings:', error);
+            }
+
+            if (data) {
+                setSettings({
+                    currency: data.currency as 'usd' | 'inr',
+                    streamerMode: data.streamer_mode,
+                });
+            }
+
+            setIsLoaded(true);
+        };
+
+        fetchSettings();
+    }, [user]);
+
+    const updateSettings = useCallback(async (newSettings: Partial<GeneralSettings>) => {
+        if (!user) return false;
+
+        try {
+            const updateData: any = {};
+            if (newSettings.currency !== undefined) updateData.currency = newSettings.currency;
+            if (newSettings.streamerMode !== undefined) updateData.streamer_mode = newSettings.streamerMode;
+
+            const { error } = await supabase
+                .from('user_settings')
+                .upsert({
+                    user_id: user.id,
+                    ...updateData,
+                }, {
+                    onConflict: 'user_id'
+                });
+
+            if (error) throw error;
+
+            setSettings(prev => ({ ...prev, ...newSettings }));
+            toast({ title: "Settings Updated", description: "Your preferences have been saved." });
+            return true;
+        } catch (error) {
+            console.error('Error updating settings:', error);
+            toast({ variant: "destructive", title: "Error", description: "Could not update settings." });
+            return false;
+        }
+    }, [user, toast]);
 
     return { settings, updateSettings, isLoaded };
 }

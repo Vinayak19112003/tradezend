@@ -7,8 +7,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,15 +85,40 @@ export default function SignupPage() {
   const onSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const { data: authData, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (error) throw error;
+
+      if (authData.user) {
+        // Create user profile
+        await supabase.from('profiles').insert({
+          id: authData.user.id,
+          email: authData.user.email!,
+        });
+
+        // Create default account
+        await supabase.from('accounts').insert({
+          user_id: authData.user.id,
+          name: 'Default Account',
+          initial_balance: 0,
+          current_balance: 0,
+        });
+
+        // Create default settings
+        await supabase.from('user_settings').insert({
+          user_id: authData.user.id,
+        });
+      }
+
       router.push("/dashboard");
     } catch (error: any) {
         toast({
             variant: "destructive",
             title: "Sign Up Failed",
-            description: error.code === 'auth/email-already-in-use' 
-              ? "This email is already in use. Please log in."
-              : error.message || "An unknown error occurred.",
+            description: error.message || "An unknown error occurred.",
           });
     } finally {
       setIsLoading(false);

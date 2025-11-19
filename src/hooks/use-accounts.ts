@@ -1,58 +1,142 @@
-
 "use client";
 
-import useJournalSettings from './use-journal-settings';
-import { DEFAULT_ACCOUNTS } from '@/lib/constants';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from './use-auth';
 import type { Account } from '@/lib/types';
 import { useToast } from './use-toast';
-import { useCallback } from 'react';
 
 export function useAccounts() {
-  const { items: accounts, updateWholeObject, isLoaded } = useJournalSettings('accounts', DEFAULT_ACCOUNTS);
+  const { user } = useAuth();
   const { toast } = useToast();
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  const addAccount = useCallback(async (newAccount: Omit<Account, 'id' | 'currentBalance'>) => {
-    const accountWithId: Account = { 
-        ...newAccount, 
-        id: crypto.randomUUID(),
-        currentBalance: newAccount.initialBalance,
+  useEffect(() => {
+    if (!user) {
+      setAccounts([]);
+      setIsLoaded(true);
+      return;
+    }
+
+    const fetchAccounts = async () => {
+      const { data, error } = await supabase
+        .from('accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching accounts:', error);
+        setIsLoaded(true);
+        return;
+      }
+
+      const mappedAccounts: Account[] = (data || []).map(row => ({
+        id: row.id,
+        name: row.name,
+        initialBalance: row.initial_balance,
+        currentBalance: row.current_balance,
+      }));
+
+      setAccounts(mappedAccounts);
+      setIsLoaded(true);
     };
 
-    const newAccounts = [...accounts, accountWithId];
-    const success = await updateWholeObject(newAccounts);
-    if(success) {
-        toast({ title: "Account Added", description: `"${newAccount.name}" has been created.` });
+    fetchAccounts();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('accounts_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'accounts',
+        filter: `user_id=eq.${user.id}`
+      }, () => {
+        fetchAccounts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const addAccount = useCallback(async (newAccount: Omit<Account, 'id' | 'currentBalance'>) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('accounts')
+        .insert({
+          user_id: user.id,
+          name: newAccount.name,
+          initial_balance: newAccount.initialBalance,
+          current_balance: newAccount.initialBalance,
+        });
+
+      if (error) throw error;
+
+      toast({ title: "Account Added", description: `"${newAccount.name}" has been created.` });
+      return true;
+    } catch (error) {
+      console.error('Error adding account:', error);
+      toast({ variant: "destructive", title: "Error", description: "Could not add account." });
+      return false;
     }
-    return success;
-  }, [accounts, updateWholeObject, toast]);
+  }, [user, toast]);
 
   const updateAccount = useCallback(async (accountId: string, updatedData: Omit<Account, 'id' | 'currentBalance'>) => {
-    const newAccounts = accounts.map((acc: Account) => {
-        if (acc.id === accountId) {
-            // Recalculate currentBalance if initialBalance changes
-            const balanceDifference = updatedData.initialBalance - acc.initialBalance;
-            const newCurrentBalance = (acc.currentBalance ?? acc.initialBalance) + balanceDifference;
-            return { ...acc, ...updatedData, currentBalance: newCurrentBalance };
-        }
-        return acc;
-    });
-    const success = await updateWholeObject(newAccounts);
-    if(success) {
-        toast({ title: "Account Updated", description: "Your account details have been saved." });
-    }
-    return success;
-  }, [accounts, updateWholeObject, toast]);
+    if (!user) return false;
 
+    try {
+      // Get current account to calculate balance difference
+      const currentAccount = accounts.find((acc: Account) => acc.id === accountId);
+      if (!currentAccount) return false;
+
+      const balanceDifference = updatedData.initialBalance - currentAccount.initialBalance;
+      const newCurrentBalance = (currentAccount.currentBalance ?? currentAccount.initialBalance) + balanceDifference;
+
+      const { error } = await supabase
+        .from('accounts')
+        .update({
+          name: updatedData.name,
+          initial_balance: updatedData.initialBalance,
+          current_balance: newCurrentBalance,
+        })
+        .eq('id', accountId);
+
+      if (error) throw error;
+
+      toast({ title: "Account Updated", description: "Your account details have been saved." });
+      return true;
+    } catch (error) {
+      console.error('Error updating account:', error);
+      toast({ variant: "destructive", title: "Error", description: "Could not update account." });
+      return false;
+    }
+  }, [user, accounts, toast]);
 
   const deleteAccount = useCallback(async (accountId: string) => {
-    const newAccounts = accounts.filter((acc: Account) => acc.id !== accountId);
-    // You might want to add checks here to prevent deleting the last account
-    // or an account with trades.
-    const success = await updateWholeObject(newAccounts);
-    if(success) {
-         toast({ title: "Account Deleted", description: `The account has been removed.` });
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('accounts')
+        .delete()
+        .eq('id', accountId);
+
+      if (error) throw error;
+
+      toast({ title: "Account Deleted", description: `The account has been removed.` });
+      return true;
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast({ variant: "destructive", title: "Error", description: "Could not delete account." });
+      return false;
     }
-  }, [accounts, updateWholeObject, toast]);
+  }, [user, toast]);
 
   return { accounts, addAccount, updateAccount, deleteAccount, isLoaded };
 }

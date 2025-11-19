@@ -330,7 +330,7 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
 
         if (data.screenshotFile) {
             const file = data.screenshotFile;
-            const filePath = `screenshots/${user.uid}/${tradeId}/${file.name}`;
+            const filePath = `screenshots/${user.id}/${tradeId}/${file.name}`;
             const fileRef = storageRef(storage, filePath);
             await uploadBytes(fileRef, file);
             screenshotURL = await getDownloadURL(fileRef);

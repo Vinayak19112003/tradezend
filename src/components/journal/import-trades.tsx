@@ -19,9 +19,8 @@ import { Loader2, Upload, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { importTrades } from '@/ai/flows/import-trades-flow';
 import type { Trade } from '@/lib/types';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/use-auth';
-import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useAccountContext } from '@/contexts/account-context';
 
 type ImportTradesProps = {
@@ -89,32 +88,25 @@ export default function ImportTrades({ onImport, addMultipleTrades }: ImportTrad
                 return;
             }
 
-            // Deduplication logic against Firestore
-            const newTicketIds = tradesFromAI.map(t => t.ticket).filter(Boolean);
+            // Deduplication logic against Supabase
+            const newTicketIds = tradesFromAI.map(t => t.ticket).filter(Boolean) as string[];
             const existingTicketIds = new Set<string>();
 
             if (newTicketIds.length > 0) {
-                const tradesCollection = collection(db, 'users', user.uid, 'trades');
-                
-                // Firestore 'in' query has a limit of 30 items. We need to chunk the array.
-                const CHUNK_SIZE = 30;
-                const chunks: string[][] = [];
-                for (let i = 0; i < newTicketIds.length; i += CHUNK_SIZE) {
-                    chunks.push(newTicketIds.slice(i, i + CHUNK_SIZE).filter((id): id is string => id !== undefined));
-                }
+                const { data, error } = await supabase
+                    .from('trades')
+                    .select('ticket')
+                    .eq('user_id', user.id)
+                    .eq('account_id', selectedAccountId)
+                    .in('ticket', newTicketIds);
 
-                const queryPromises = chunks.map(chunk => {
-                    const q = query(tradesCollection, where('ticket', 'in', chunk), where('accountId', '==', selectedAccountId));
-                    return getDocs(q);
-                });
-
-                const querySnapshots = await Promise.all(queryPromises);
-
-                querySnapshots.forEach(querySnapshot => {
-                    querySnapshot.forEach(doc => {
-                        existingTicketIds.add(doc.data().ticket);
+                if (!error && data) {
+                    data.forEach(row => {
+                        if (row.ticket) {
+                            existingTicketIds.add(row.ticket);
+                        }
                     });
-                });
+                }
             }
             
             const newTrades = tradesFromAI.filter(trade => !trade.ticket || !existingTicketIds.has(trade.ticket));
