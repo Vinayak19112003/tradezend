@@ -34,6 +34,14 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       accounts: {
         Row: {
@@ -63,6 +71,14 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       trades: {
         Row: {
@@ -176,6 +192,20 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "trades_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trades_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       user_settings: {
         Row: {
@@ -211,6 +241,14 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "user_settings_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       strategies: {
         Row: {
@@ -231,6 +269,14 @@ export interface Database {
           name?: string
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "strategies_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       assets: {
         Row: {
@@ -251,6 +297,14 @@ export interface Database {
           name?: string
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "assets_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       mistake_tags: {
         Row: {
@@ -271,6 +325,14 @@ export interface Database {
           name?: string
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "mistake_tags_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       trading_rules: {
         Row: {
@@ -291,6 +353,14 @@ export interface Database {
           name?: string
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "trading_rules_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       trading_model: {
         Row: {
@@ -323,6 +393,14 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "trading_model_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {
