@@ -29,7 +29,7 @@ export default function PreferencesCard() {
     }, [isLoaded, settings]);
 
     const handleCurrencyChange = (value: string) => {
-        setLocalSettings(prev => ({...prev, currency: value}));
+        setLocalSettings(prev => ({...prev, currency: value as 'usd' | 'inr'}));
     }
     
     const handleSave = async () => {

@@ -21,7 +21,7 @@ const useJournalSettings = (key: SettingsKey, defaultValues: any) => {
 
   const getSettingsDocRef = useCallback(() => {
     if (!user || !db) return null;
-    return doc(db, 'users', user.uid, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
+    return doc(db, 'users', user.id, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
   }, [user]);
 
   // Effect to initialize settings for a new user
