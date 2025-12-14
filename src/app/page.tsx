@@ -1,27 +1,19 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
-import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function HomePage() {
-  const { user, isLoading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading) {
-      if (user) {
-        router.replace('/dashboard');
-      } else {
-        router.replace('/login');
-      }
-    }
-  }, [user, isLoading, router]);
-
   return (
-    <div className="h-screen w-full flex items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin" />
-    </div>
+    <main className="h-screen w-full flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold">Anony Trading</h1>
+        <p className="mt-2 text-gray-600">Authentication has been removed. Proceed to the app.</p>
+        <div className="mt-4">
+          <Link href="/dashboard" className="text-blue-600 hover:underline">
+            Go to Dashboard
+          </Link>
+        </div>
+      </div>
+    </main>
   );
 }
