@@ -12,12 +12,12 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* TypeScript & ESLint */
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // typescript: {
+  //   ignoreBuildErrors: true,
+  // },
+  // eslint: {
+  //   ignoreDuringBuilds: true,
+  // },
 
   /* Performance Optimizations */
   compress: true, // Enable gzip compression

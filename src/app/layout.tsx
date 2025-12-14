@@ -7,6 +7,19 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { StreamerModeProvider } from '@/contexts/streamer-mode-context';
 import { cn } from '@/lib/utils';
 import { CurrencyProvider } from '@/contexts/currency-context';
+import { Inter, Space_Grotesk } from 'next/font/google';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Anony Trading',
@@ -25,15 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Space+Grotesk:wght@300..700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className={cn("font-body antialiased")}>
+      <body className={cn("font-body antialiased", inter.variable, spaceGrotesk.variable)}>
         <AuthProvider>
           <ThemeProvider
             attribute="class"

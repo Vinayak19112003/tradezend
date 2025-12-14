@@ -772,7 +772,7 @@ const ruleOptions = useMemo((): MultiSelectOption[] =>
                         name="entryReason"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>What was my primary reason (the "A+ setup") for entry?</FormLabel>
+                            <FormLabel>What was my primary reason (the &quot;A+ setup&quot;) for entry?</FormLabel>
                             <FormControl>
                                 <Textarea placeholder="e.g., Perfect break and retest of key level..." {...field} />
                             </FormControl>

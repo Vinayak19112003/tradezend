@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type ReactNode, useCallback } from 'react';
 import { useGeneralSettings } from '@/hooks/use-general-settings';
 
 type Currency = 'usd' | 'inr';
@@ -24,19 +24,19 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     const currency: Currency = settings.currency === 'inr' ? 'inr' : 'usd';
     const currencySymbol = CURRENCY_SYMBOLS[currency];
     
-    const formatCurrency = (value: number, options: { sign?: boolean, decimals?: number } = {}) => {
+    const formatCurrency = useCallback((value: number, options: { sign?: boolean, decimals?: number } = {}) => {
         const { sign = false, decimals = 2 } = options;
         const signPrefix = value > 0 ? '+' : value < 0 ? '-' : '';
         const formattedValue = `${currencySymbol}${Math.abs(value).toFixed(decimals)}`;
         return sign ? `${signPrefix}${formattedValue}` : formattedValue;
-    };
+    }, [currencySymbol]);
 
 
     const value = useMemo(() => ({
         currency,
         currencySymbol,
         formatCurrency,
-    }), [currency, currencySymbol]);
+    }), [currency, currencySymbol, formatCurrency]);
 
     return (
         <CurrencyContext.Provider value={value}>
