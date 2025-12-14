@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/contexts/auth-context';
+// Authentication removed: no AuthProvider import
 import { StreamerModeProvider } from '@/contexts/streamer-mode-context';
 import { cn } from '@/lib/utils';
 import { CurrencyProvider } from '@/contexts/currency-context';
@@ -34,7 +34,6 @@ export default function RootLayout({
         />
       </head>
       <body className={cn("font-body antialiased")}>
-        <AuthProvider>
           <ThemeProvider
             attribute="class"
             defaultTheme="dark"
@@ -48,7 +47,7 @@ export default function RootLayout({
                 </CurrencyProvider>
             </StreamerModeProvider>
           </ThemeProvider>
-        </AuthProvider>
+        {/* AuthProvider removed - app renders without global auth context */}
       </body>
     </html>
   );
