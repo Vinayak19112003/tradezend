@@ -79,7 +79,7 @@ export const SummaryBanner = memo(function SummaryBanner({ trades }: SummaryBann
         <div className="flex flex-col justify-between gap-2 rounded-lg border bg-card text-card-foreground p-4 shadow-sm">
             <div className="flex items-start justify-between">
                 <div>
-                    <p className="text-sm text-muted-foreground">This Month's Top Mistake</p>
+                    <p className="text-sm text-muted-foreground">This Month&apos;s Top Mistake</p>
                     <p className="text-xl font-semibold truncate">{monthStats.topMistake || 'None'}</p>
                 </div>
                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">

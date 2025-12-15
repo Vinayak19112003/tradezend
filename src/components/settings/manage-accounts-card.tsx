@@ -66,7 +66,7 @@ export function ManageAccountsCard() {
                         ))}
                          {accounts.length === 0 && (
                             <div className="text-center text-sm text-muted-foreground p-4">
-                                You haven't added any trading accounts yet.
+                                You haven&apos;t added any trading accounts yet.
                             </div>
                         )}
                     </div>

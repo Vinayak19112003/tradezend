@@ -99,7 +99,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   Something went wrong
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  We're sorry for the inconvenience. An unexpected error has occurred.
+                  We&apos;re sorry for the inconvenience. An unexpected error has occurred.
                 </p>
               </div>
 

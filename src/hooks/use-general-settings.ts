@@ -35,9 +35,10 @@ export function useGeneralSettings() {
             }
 
             if (data) {
+                const row = data as any;
                 setSettings({
-                    currency: data.currency as 'usd' | 'inr',
-                    streamerMode: data.streamer_mode,
+                    currency: row.currency as 'usd' | 'inr',
+                    streamerMode: row.streamer_mode,
                 });
             }
 
