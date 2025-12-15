@@ -29,7 +29,7 @@ export function useTradingRules() {
         console.error('Error fetching trading rules:', error);
       }
 
-      setTradingRules((data || []).map(row => row.name));
+      setTradingRules((data || []).map((row: any) => row.name));
       setIsLoaded(true);
     };
 

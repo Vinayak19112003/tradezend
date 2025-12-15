@@ -29,7 +29,7 @@ export function useMistakeTags() {
         console.error('Error fetching mistake tags:', error);
       }
 
-      setMistakeTags((data || []).map(row => row.name));
+      setMistakeTags((data || []).map((row: any) => row.name));
       setIsLoaded(true);
     };
 

@@ -29,7 +29,7 @@ export function useStrategies() {
         console.error('Error fetching strategies:', error);
       }
 
-      setStrategies((data || []).map(row => row.name));
+      setStrategies((data || []).map((row: any) => row.name));
       setIsLoaded(true);
     };
 

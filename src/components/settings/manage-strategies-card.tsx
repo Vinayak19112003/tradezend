@@ -37,7 +37,7 @@ export function ManageStrategiesCard() {
                     ))}
                      {strategies.length === 0 && (
                         <div className="text-center text-sm text-muted-foreground p-4">
-                            You haven't added any trading strategies yet.
+                            You haven&apos;t added any trading strategies yet.
                         </div>
                     )}
                 </div>

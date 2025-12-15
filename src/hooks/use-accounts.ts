@@ -32,7 +32,7 @@ export function useAccounts() {
         return;
       }
 
-      const mappedAccounts: Account[] = (data || []).map(row => ({
+      const mappedAccounts: Account[] = (data || []).map((row: any) => ({
         id: row.id,
         name: row.name,
         initialBalance: row.initial_balance,

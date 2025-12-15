@@ -29,7 +29,7 @@ export function useAssets() {
         console.error('Error fetching assets:', error);
       }
 
-      setAssets((data || []).map(row => row.name));
+      setAssets((data || []).map((row: any) => row.name));
       setIsLoaded(true);
     };
 
