@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { TradesProvider } from '@/contexts/trades-context';
 import { AccountProvider } from '@/contexts/account-context';
 import { AppSidebar } from '@/components/shell/app-sidebar';
-import MainLayout from '@/components/shell/main-layout';
+
 
 // Dynamically import the TradeForm to optimize the initial bundle size.
 // The form is only loaded when the user triggers it.
@@ -134,9 +134,9 @@ export default function AuthedLayout({
                                 </div>
 
                                 {/* Main Content Area */}
-                                <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-                                    <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 scrollbar-hide">
-                                        <MainLayout />
+                                <div className="flex-1 flex flex-col min-h-screen overflow-hidden bg-background">
+                                    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 scrollbar-hide">
+                                        {children}
                                     </main>
                                 </div>
                             </div>
