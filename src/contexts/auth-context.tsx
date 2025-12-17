@@ -1,16 +1,13 @@
 'use client';
 
 import { createContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
-
-// Minimal mock user for local-only mode
-interface MockUser {
-  id: string;
-  email: string;
-}
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
-  user: MockUser | null;
-  session: null;
+  user: User | null;
+  session: Session | null;
   isLoading: boolean;
   logout: () => Promise<void>;
 }
@@ -18,25 +15,62 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // In local-only mode, we always have a "logged in" mock user
-  const [user] = useState<MockUser>({ id: 'local-user', email: 'local@user.app' });
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    // Simulate auth check completing
-    setIsLoading(false);
+    // 1. Check active session
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user ?? null);
+      } catch (error) {
+        console.error('Error checking session:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkSession();
+
+    // 2. Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoading(false);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const logout = useCallback(async () => {
-    // In local mode, logout just clears local storage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('tradezend_trades');
-      localStorage.removeItem('tradezend_accounts');
-      window.location.reload();
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      router.push('/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
-  }, []);
+  }, [router]);
 
-  const value = useMemo(() => ({ user, session: null, isLoading, logout }), [user, isLoading, logout]);
+  const value = useMemo(
+    () => ({
+      user,
+      session,
+      isLoading,
+      logout,
+    }),
+    [user, session, isLoading, logout]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

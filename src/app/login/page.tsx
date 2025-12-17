@@ -56,10 +56,19 @@ export default function LoginPage() {
         title: "Success",
         description: "Logged in successfully",
       });
-      router.push("/dashboard");
+
+      // Check for returnUrl
+      const params = new URLSearchParams(window.location.search);
+      const returnUrl = params.get('returnUrl');
+
+      if (returnUrl) {
+        router.push(decodeURIComponent(returnUrl));
+      } else {
+        router.push("/dashboard");
+      }
       router.refresh();
     } catch (error) {
-        console.error("Login error:", error);
+      console.error("Login error:", error);
       toast({
         variant: "destructive",
         title: "Error",
