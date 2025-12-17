@@ -10,8 +10,12 @@ import { GridBackground } from '@/components/ui/grid-background';
 export function Hero() {
     return (
         <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden bg-black/[0.96] antialiased bg-grid-white/[0.02]">
-            <Spotlight className="-top-40 left-0 md:left-60 md:-top-20" fill="white" />
+            <Spotlight className="-top-40 left-0 md:left-60 md:-top-20 opacity-100" fill="white" />
             <GridBackground />
+
+            {/* Beating Gradient Orbs */}
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/30 rounded-full blur-[128px] animate-pulse" style={{ animationDuration: '4s' }} />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/30 rounded-full blur-[128px] animate-pulse" style={{ animationDuration: '7s' }} />
 
             <div className="container relative z-10 flex flex-col items-center text-center">
                 <motion.div
@@ -19,8 +23,8 @@ export function Hero() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <div className="inline-flex items-center rounded-full border border-neutral-800 bg-neutral-900/50 backdrop-blur-xl px-3 py-1 text-sm font-medium text-neutral-300 mb-6">
-                        <span className="flex h-2 w-2 rounded-full bg-blue-500 mr-2 animate-pulse" />
+                    <div className="inline-flex items-center rounded-full border border-blue-500/30 bg-blue-500/10 backdrop-blur-xl px-3 py-1 text-sm font-medium text-blue-300 mb-6 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                        <span className="flex h-2 w-2 rounded-full bg-blue-400 mr-2 shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-pulse" />
                         New: AI-Powered Trade Analysis
                     </div>
                 </motion.div>
