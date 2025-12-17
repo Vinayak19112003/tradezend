@@ -105,10 +105,20 @@ export default function DashboardPage() {
               <span className="w-1 h-6 bg-indigo-500 rounded-full" />
               Performance Analysis
             </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Equity Curve moved down */}
-              <EquityCurveChart trades={filteredTrades} />
-              <DirectionalAnalysis trades={filteredTrades} />
+            <div className="space-y-8">
+              {/* Full Width Equity Curve */}
+              <div>
+                <EquityCurveChart trades={filteredTrades} />
+              </div>
+
+              {/* Full Width Directional Analysis */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-emerald-500 rounded-full" />
+                  Directional Stats
+                </h3>
+                <DirectionalAnalysis trades={filteredTrades} />
+              </div>
             </div>
           </div>
         </div>
