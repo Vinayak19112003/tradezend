@@ -78,22 +78,22 @@ const DropdownMenuItem = ({ children, onClick, className }: DropdownMenuItemProp
 );
 
 interface DropdownMenuSubProps {
-    trigger: ReactNode;
-    children: ReactNode;
+  trigger: ReactNode;
+  children: ReactNode;
 }
 
 const DropdownMenuSub = ({ trigger, children }: DropdownMenuSubProps) => {
-    const [isSubOpen, setIsSubOpen] = useState(false);
-    return (
-        <div className="relative" onMouseEnter={() => setIsSubOpen(true)} onMouseLeave={() => setIsSubOpen(false)}>
-            {trigger}
-            {isSubOpen && (
-                 <div className="origin-top-right absolute -left-2 top-full -translate-x-full w-40 rounded-xl shadow-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md ring-1 ring-black/5 dark:ring-white/10 focus:outline-none z-50 animate-in fade-in-0 zoom-in-95 p-2">
-                    {children}
-                </div>
-            )}
+  const [isSubOpen, setIsSubOpen] = useState(false);
+  return (
+    <div className="relative" onMouseEnter={() => setIsSubOpen(true)} onMouseLeave={() => setIsSubOpen(false)}>
+      {trigger}
+      {isSubOpen && (
+        <div className="origin-top-right absolute -left-2 top-full -translate-x-full w-40 rounded-xl shadow-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md ring-1 ring-black/5 dark:ring-white/10 focus:outline-none z-50 animate-in fade-in-0 zoom-in-95 p-2">
+          {children}
         </div>
-    )
+      )}
+    </div>
+  )
 }
 
 const DropdownMenuSeparator = () => (
@@ -102,13 +102,13 @@ const DropdownMenuSeparator = () => (
 
 // --- Main Component ---
 
-export function UserMenu() {
+export function UserMenu({ showLabel = true }: { showLabel?: boolean }) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { isStreamerMode, toggleStreamerMode } = useStreamerMode();
-  
+
   const handleLogout = () => {
     logout();
     router.push('/login');
@@ -123,20 +123,33 @@ export function UserMenu() {
   };
 
   const userInitials = user?.email?.substring(0, 2).toUpperCase() || '...';
-  
+
   return (
     <DropdownMenu
       trigger={
-        <button className="flex items-center space-x-3 p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+        <button className={cn(
+          "flex items-center p-1.5 rounded-lg hover:bg-white/5 transition-colors w-full",
+          showLabel ? "space-x-3 px-2" : "justify-center"
+        )}>
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-semibold text-sm shrink-0 shadow-lg shadow-purple-500/20">
             {userInitials}
           </div>
+          {showLabel && (
+            <div className="text-left hidden md:block">
+              <div className="text-sm font-semibold text-white truncate max-w-[120px]">
+                {user?.email?.split('@')[0]}
+              </div>
+              <div className="text-xs text-zinc-500 font-medium">
+                Pro Plan
+              </div>
+            </div>
+          )}
         </button>
       }
     >
       <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-700">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-semibold shadow-lg shadow-purple-500/20">
             {userInitials}
           </div>
           <div>
@@ -155,18 +168,18 @@ export function UserMenu() {
           <Settings className="mr-3 h-4 w-4 text-zinc-500" />
           Settings
         </DropdownMenuItem>
-        
+
         <DropdownMenuItem onClick={toggleStreamerMode}>
-            <Tv className="mr-3 h-4 w-4 text-zinc-500" />
-            Streamer Mode: {isStreamerMode ? 'On' : 'Off'}
+          <Tv className="mr-3 h-4 w-4 text-zinc-500" />
+          Streamer Mode: {isStreamerMode ? 'On' : 'Off'}
         </DropdownMenuItem>
       </div>
 
       <DropdownMenuSeparator />
 
-        <div className="p-2">
-            <SwitchButton size="sm" className="w-full" />
-        </div>
+      <div className="p-2">
+        <SwitchButton size="sm" className="w-full" />
+      </div>
 
 
       <DropdownMenuSeparator />

@@ -14,13 +14,14 @@ import type { Trade } from '@/lib/types';
 import AuthGuard from '@/components/auth/auth-guard';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { TradeFormProvider, useTradeForm } from '@/contexts/trade-form-context';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Menu } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { TradesProvider } from '@/contexts/trades-context';
-import { Header } from '@/components/shell/header';
 import { AccountProvider } from '@/contexts/account-context';
+import { AppSidebar } from '@/components/shell/app-sidebar';
 import MainLayout from '@/components/shell/main-layout';
 
 // Dynamically import the TradeForm to optimize the initial bundle size.
@@ -48,7 +49,7 @@ const TradeFormController = memo(function TradeFormController({ children }: { ch
         setEditingTrade(trade);
         setIsFormOpen(true);
     };
-    
+
     // Register the function to open the form with the context
     useEffect(() => {
         setOpenFormFunction(() => handleOpenForm);
@@ -68,7 +69,7 @@ const TradeFormController = memo(function TradeFormController({ children }: { ch
     const FormHeaderComponent = isMobile ? SheetHeader : DialogHeader;
     const FormTitleComponent = isMobile ? SheetTitle : DialogTitle;
     const FormDescriptionComponent = isMobile ? SheetDescription : DialogDescription;
-    
+
     return (
         <>
             {children}
@@ -101,26 +102,48 @@ const TradeFormController = memo(function TradeFormController({ children }: { ch
  * @param {React.ReactNode} props.children - The page content passed by Next.js.
  */
 export default function AuthedLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
-  return (
-    <AccountProvider>
-        <TradesProvider>
-            <TradeFormProvider>
-                <AuthGuard>
-                    <TradeFormController>
-                        <div className="flex min-h-screen w-full flex-col bg-muted/40">
-                            <Header />
-                            <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-                                <MainLayout />
-                            </main>
-                        </div>
-                    </TradeFormController>
-                </AuthGuard>
-            </TradeFormProvider>
-        </TradesProvider>
-    </AccountProvider>
-  )
+    return (
+        <AccountProvider>
+            <TradesProvider>
+                <TradeFormProvider>
+                    <AuthGuard>
+                        <TradeFormController>
+                            <div className="flex min-h-screen w-full bg-black">
+                                {/* Desktop Sidebar */}
+                                <div className="hidden md:flex">
+                                    <AppSidebar />
+                                </div>
+
+                                {/* Mobile Header & Sidebar */}
+                                <div className="md:hidden flex items-center h-16 px-4 border-b border-white/5 bg-black/60 sticky top-0 z-40 backdrop-blur-md">
+                                    <Sheet>
+                                        <SheetTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="mr-4 text-zinc-400">
+                                                <Menu className="h-6 w-6" />
+                                            </Button>
+                                        </SheetTrigger>
+                                        <SheetContent side="left" className="p-0 border-r border-white/10 bg-black w-[280px]">
+                                            <AppSidebar />
+                                        </SheetContent>
+                                    </Sheet>
+                                    <span className="font-bold text-lg tracking-tight text-white">TradeZend</span>
+                                </div>
+
+                                {/* Main Content Area */}
+                                <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+                                    <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 scrollbar-hide">
+                                        <MainLayout />
+                                    </main>
+                                </div>
+                            </div>
+                        </TradeFormController>
+                    </AuthGuard>
+                </TradeFormProvider>
+            </TradesProvider>
+        </AccountProvider>
+    )
 }
