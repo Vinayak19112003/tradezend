@@ -97,9 +97,7 @@ export default memo(function MonthlyCalendar({ trades, onDateSelect }: MonthlyCa
     const gridColsClass = showWeeklyPnl ? 'grid-cols-8' : 'grid-cols-7';
 
 
-    import { GlassCard, GlassCardHeader, GlassCardContent, GlassCardTitle } from "@/components/ui/glass-card";
-
-    // ... imports
+    // Layout constants handled by logic above
 
     if (!mounted) {
         return (
