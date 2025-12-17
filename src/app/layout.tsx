@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { CurrencyProvider } from '@/contexts/currency-context';
 
 export const metadata: Metadata = {
-  title: 'Anony Trading',
+  title: 'TradeZend',
   description: 'A modern journal for professionals.',
 };
 

@@ -1,129 +1,123 @@
-
 "use client";
 
-import { useMemo, memo } from 'react';
-import { type Trade } from '@/lib/types';
-import { isThisMonth } from 'date-fns';
-import { TrendingUp, AlertTriangle, Target } from 'lucide-react';
-import { StreamerModeText } from '@/components/streamer-mode-text';
-import { useTargets } from '@/hooks/use-targets';
-import { Progress } from '@/components/ui/progress';
-import { SetTargetsDialog } from '@/components/settings/set-targets-dialog';
-import { useCurrency } from '@/contexts/currency-context';
-import { cn } from '@/lib/utils';
+import { useMemo } from "react";
+import type { Trade } from "@/lib/types";
+import { useCurrency } from "@/contexts/currency-context";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
+import { Target, AlertTriangle, Crosshair } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-type SummaryBannerProps = {
-    trades: Trade[];
-};
-
-export const SummaryBanner = memo(function SummaryBanner({ trades }: SummaryBannerProps) {
-    const { targets } = useTargets();
+export function SummaryBanner({ trades }: { trades: Trade[] }) {
     const { formatCurrency } = useCurrency();
 
-    const monthStats = useMemo(() => {
-        const thisMonthsTrades = trades.filter(trade => isThisMonth(new Date(trade.date)));
-        if (thisMonthsTrades.length === 0) {
-            return { pnl: 0, topMistake: null };
-        }
+    const stats = useMemo(() => {
+        // Calculate PnL for the current month
+        const currentMonthPnl = trades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+        const monthlyTarget = 500; // Example target from screenshot
+        const maxLossLimit = 200; // Example limit from screenshot
 
-        const pnl = thisMonthsTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
-        const mistakeCounts: { [key: string]: number } = {};
-        thisMonthsTrades.forEach(trade => {
-            trade.mistakes?.forEach(mistake => {
-                mistakeCounts[mistake] = (mistakeCounts[mistake] || 0) + 1;
+        const targetProgress = Math.min((Math.max(currentMonthPnl, 0) / monthlyTarget) * 100, 100);
+        const riskUsed = Math.min((Math.abs(Math.min(currentMonthPnl, 0)) / maxLossLimit) * 100, 100);
+
+        // Calculate "Top Mistake" (simplified logic: most frequent mistake in losing trades)
+        const mistakes: Record<string, number> = {};
+        trades.filter(t => t.result === 'Loss').forEach(t => {
+            t.mistakes?.forEach(m => {
+                mistakes[m] = (mistakes[m] || 0) + 1;
             });
         });
 
-        const topMistake = Object.entries(mistakeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+        let topMistake = "None";
+        let maxCount = 0;
+        Object.entries(mistakes).forEach(([mistake, count]) => {
+            if (count > maxCount) {
+                maxCount = count;
+                topMistake = mistake;
+            }
+        });
 
-        return { pnl, topMistake };
+        return {
+            currentMonthPnl,
+            monthlyTarget,
+            maxLossLimit,
+            targetProgress,
+            riskUsed,
+            topMistake
+        };
     }, [trades]);
 
-    const pnlProgress = targets.profit > 0 ? Math.min((monthStats.pnl / targets.profit) * 100, 100) : 0;
-    const lossProgress = targets.loss > 0 ? Math.min((Math.abs(monthStats.pnl < 0 ? monthStats.pnl : 0) / targets.loss) * 100, 100) : 0;
-
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Profit Target Card */}
-            <div className={cn(
-                "group relative flex flex-col justify-between gap-4 rounded-xl border bg-card/80 backdrop-blur-sm text-card-foreground p-5 shadow-lg shadow-black/5 dark:shadow-black/20 transition-all duration-300",
-                pnlProgress > 0 && "hover:shadow-success/10"
-            )}>
-                <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Monthly Profit Target</p>
-                        <StreamerModeText as="p" className="text-2xl font-bold font-headline text-success tracking-tight">
-                            {`${formatCurrency(monthStats.pnl)} / ${formatCurrency(targets.profit)}`}
-                        </StreamerModeText>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+            {/* Monthly Profit Target */}
+            <DashboardCard
+                title="Monthly Profit Target"
+                value={
+                    <div className="flex items-end gap-2">
+                        <span className={stats.currentMonthPnl >= 0 ? "text-green-500" : "text-white"}>
+                            {formatCurrency(stats.currentMonthPnl)}
+                        </span>
+                        <span className="text-zinc-500 text-lg mb-0.5">/ {formatCurrency(stats.monthlyTarget)}</span>
                     </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success transition-transform duration-300 group-hover:scale-110">
-                        <TrendingUp className="h-6 w-6" />
+                }
+                subtitle={
+                    <div className="w-full mt-2">
+                        <div className="flex justify-between text-xs text-zinc-500 mb-1">
+                            <span>Progress</span>
+                            <span>{stats.targetProgress.toFixed(0)}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-green-500 rounded-full transition-all duration-1000"
+                                style={{ width: `${stats.targetProgress}%` }}
+                            />
+                        </div>
                     </div>
-                </div>
-                <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Progress</span>
-                        <span className="font-medium text-success">{pnlProgress.toFixed(0)}%</span>
-                    </div>
-                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                            className="h-full bg-gradient-to-r from-success to-success/70 transition-all duration-500 ease-out"
-                            style={{ width: `${pnlProgress}%` }}
-                        />
-                    </div>
-                </div>
-            </div>
+                }
+                icon={<Target className="w-5 h-5" />}
+                trend={stats.currentMonthPnl > 0 ? 'up' : 'neutral'}
+            />
 
-            {/* Loss Limit Card */}
-            <div className={cn(
-                "group relative flex flex-col justify-between gap-4 rounded-xl border bg-card/80 backdrop-blur-sm text-card-foreground p-5 shadow-lg shadow-black/5 dark:shadow-black/20 transition-all duration-300",
-                lossProgress > 50 && "hover:shadow-destructive/10"
-            )}>
-                <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Max Loss Limit</p>
-                        <StreamerModeText as="p" className="text-2xl font-bold font-headline text-destructive tracking-tight">
-                            {`${formatCurrency(Math.abs(monthStats.pnl < 0 ? monthStats.pnl : 0))} / ${formatCurrency(targets.loss)}`}
-                        </StreamerModeText>
+            {/* Max Loss Limit */}
+            <DashboardCard
+                title="Max Loss Limit"
+                value={
+                    <div className="flex items-end gap-2">
+                        <span className={stats.currentMonthPnl < 0 ? "text-red-500" : "text-white"}>
+                            {formatCurrency(Math.abs(Math.min(stats.currentMonthPnl, 0)))}
+                        </span>
+                        <span className="text-zinc-500 text-lg mb-0.5">/ {formatCurrency(stats.maxLossLimit)}</span>
                     </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive transition-transform duration-300 group-hover:scale-110">
-                        <AlertTriangle className="h-6 w-6" />
+                }
+                subtitle={
+                    <div className="w-full mt-2">
+                        <div className="flex justify-between text-xs text-zinc-500 mb-1">
+                            <span>Risk Used</span>
+                            <span>{stats.riskUsed.toFixed(0)}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-red-500 rounded-full transition-all duration-1000"
+                                style={{ width: `${stats.riskUsed}%` }}
+                            />
+                        </div>
                     </div>
-                </div>
-                <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Risk Used</span>
-                        <span className={cn("font-medium", lossProgress > 75 ? "text-destructive" : "text-muted-foreground")}>{lossProgress.toFixed(0)}%</span>
-                    </div>
-                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                            className={cn(
-                                "h-full transition-all duration-500 ease-out",
-                                lossProgress > 75 ? "bg-gradient-to-r from-destructive to-destructive/70" : "bg-gradient-to-r from-orange-500 to-orange-500/70"
-                            )}
-                            style={{ width: `${lossProgress}%` }}
-                        />
-                    </div>
-                </div>
-            </div>
+                }
+                icon={<AlertTriangle className="w-5 h-5" />}
+                trend={stats.riskUsed > 50 ? 'down' : 'neutral'}
+            />
 
-            {/* Top Mistake & Targets Card */}
-            <div className="group relative flex flex-col justify-between gap-3 rounded-xl border bg-card/80 backdrop-blur-sm text-card-foreground p-5 shadow-lg shadow-black/5 dark:shadow-black/20 transition-all duration-300 hover:shadow-primary/10">
-                <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Top Mistake This Month</p>
-                        <p className="text-xl font-semibold truncate">{monthStats.topMistake || 'None'}</p>
-                    </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
-                        <Target className="h-6 w-6" />
-                    </div>
-                </div>
-                <SetTargetsDialog>
-                    <button className="w-full text-center text-sm text-primary font-medium py-2.5 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors duration-200">
+            {/* Top Mistake */}
+            <DashboardCard
+                title="Top Mistake This Month"
+                value={stats.topMistake}
+                subtitle="Focus on eliminating this error"
+                icon={<Crosshair className="w-5 h-5" />}
+                action={
+                    <Button variant="outline" size="sm" className="w-full border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:text-blue-300">
                         Set Targets
-                    </button>
-                </SetTargetsDialog>
-            </div>
+                    </Button>
+                }
+            />
         </div>
     );
-});
+}

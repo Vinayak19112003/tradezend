@@ -1,4 +1,3 @@
-
 "use client";
 
 /**
@@ -18,6 +17,7 @@ import { startOfMonth, endOfDay, isSameDay, subMonths } from "date-fns";
 import { DateRangeFilter } from "@/components/dashboard/date-range-filter";
 import type { Trade } from "@/lib/types";
 import { useTrades } from "@/contexts/trades-context";
+import { GridBackground } from "@/components/ui/grid-background";
 
 // Dynamically import components to improve initial page load performance.
 const SummaryBanner = dynamic(() => import('@/components/dashboard/summary-banner').then(mod => mod.SummaryBanner), { ssr: false, loading: () => <Skeleton className="h-28" /> });
@@ -30,9 +30,9 @@ const MonthlyCalendar = dynamic(() => import('@/components/dashboard/monthly-cal
  * It manages fetching and filtering trade data to pass to its child components.
  */
 export default function DashboardPage() {
-    const { trades: allTrades } = useTrades();
+  const { trades: allTrades } = useTrades();
   const [filteredTrades, setFilteredTrades] = useState<Trade[]>([]);
-  
+
   // Default to showing last 3 months of data for a better initial view.
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(subMonths(new Date(), 2)),
@@ -41,15 +41,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (dateRange?.from && allTrades) {
-        const from = dateRange.from;
-        const to = endOfDay(dateRange.to ?? dateRange.from);
-        const newFilteredTrades = allTrades.filter(trade => {
-            const tradeDate = new Date(trade.date);
-            return tradeDate >= from && tradeDate <= to;
-        });
-        setFilteredTrades(newFilteredTrades);
+      const from = dateRange.from;
+      const to = endOfDay(dateRange.to ?? dateRange.from);
+      const newFilteredTrades = allTrades.filter(trade => {
+        const tradeDate = new Date(trade.date);
+        return tradeDate >= from && tradeDate <= to;
+      });
+      setFilteredTrades(newFilteredTrades);
     } else {
-        setFilteredTrades(allTrades || []);
+      setFilteredTrades(allTrades || []);
     }
   }, [dateRange, allTrades]);
 
@@ -65,36 +65,64 @@ export default function DashboardPage() {
     const to = dateRange?.to;
     // If the selected date is already the only date in the range, reset to default view
     if (from && to && isSameDay(date, from) && isSameDay(date, to)) {
-        setDateRange({ 
-            from: startOfMonth(subMonths(new Date(), 2)), 
-            to: endOfDay(new Date()) 
-        });
+      setDateRange({
+        from: startOfMonth(subMonths(new Date(), 2)),
+        to: endOfDay(new Date())
+      });
     } else {
-        setDateRange({ from: date, to: date });
+      setDateRange({ from: date, to: date });
     }
   };
-  
+
   // Memoize the trades needed for the summary banner (last month).
   const summaryTrades = useMemo(() => {
-      const startOfThisMonth = startOfMonth(new Date());
-      return (allTrades || []).filter(trade => new Date(trade.date) >= startOfThisMonth);
+    const startOfThisMonth = startOfMonth(new Date());
+    return (allTrades || []).filter(trade => new Date(trade.date) >= startOfThisMonth);
   }, [allTrades]);
 
 
   // Renders the main dashboard layout.
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-          <DateRangeFilter date={dateRange} onDateChange={setDateRange} />
+    <div className="relative min-h-screen">
+      {/* Background Grid */}
+      <div className="fixed inset-0 z-[-1] pointer-events-none">
+        <GridBackground />
       </div>
-      
-      <SummaryBanner trades={summaryTrades} />
-      <StatsCards trades={filteredTrades} />
-      <DirectionalAnalysis trades={filteredTrades} />
-      
-      <div className="grid grid-cols-1 gap-4 md:gap-6">
-          <MonthlyCalendar trades={allTrades} onDateSelect={handleCalendarDateSelect} />
-          <EquityCurveChart trades={filteredTrades} />
+
+      <div className="space-y-4 md:space-y-8 relative z-10">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white mb-1">Dashboard</h1>
+            <p className="text-zinc-400 text-sm">Welcome back, Trader.</p>
+          </div>
+          <DateRangeFilter date={dateRange} onDateChange={setDateRange} />
+        </div>
+
+        <SummaryBanner trades={summaryTrades} />
+
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-blue-500 rounded-full" />
+              Key Performance Indicators
+            </h2>
+            <StatsCards trades={filteredTrades} />
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-purple-500 rounded-full" />
+              Analytics Overview
+            </h2>
+            <div className="grid grid-cols-1 gap-4 md:gap-6">
+              <DirectionalAnalysis trades={filteredTrades} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <MonthlyCalendar trades={allTrades} onDateSelect={handleCalendarDateSelect} />
+                <EquityCurveChart trades={filteredTrades} />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
