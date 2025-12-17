@@ -33,7 +33,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={cn("font-body antialiased")} suppressHydrationWarning>
+      <body className={cn("font-body antialiased tracking-tight")} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

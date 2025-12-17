@@ -21,9 +21,6 @@ export function Logo() {
         <circle cx="12" cy="14.5" r="1.5" fill="currentColor" strokeWidth="0" />
       </svg>
       <span className="font-bold text-xl tracking-tight text-white group-hover:text-blue-500 transition-colors">TradeZend</span>
-    </h1>
-    </div >
+    </div>
   );
 }
-
-```
