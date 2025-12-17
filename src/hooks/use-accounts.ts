@@ -3,125 +3,167 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Account } from '@/lib/types';
 import { useToast } from './use-toast';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/use-auth';
 
-const ACCOUNTS_STORAGE_KEY = 'tradezend_accounts';
-const DEFAULT_ACCOUNT: Account = {
-  id: 'default-account',
-  name: 'Main Account',
-  initialBalance: 10000,
-  currentBalance: 10000,
-};
-
-// Helper function to get accounts from localStorage
-const getStoredAccounts = (): Account[] => {
-  if (typeof window === 'undefined') return [DEFAULT_ACCOUNT];
-  try {
-    const stored = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
-    if (!stored) {
-      // Create default account if none exists
-      localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify([DEFAULT_ACCOUNT]));
-      return [DEFAULT_ACCOUNT];
-    }
-    return JSON.parse(stored);
-  } catch {
-    return [DEFAULT_ACCOUNT];
-  }
-};
-
-// Helper function to save accounts to localStorage
-const saveStoredAccounts = (accounts: Account[]): void => {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts));
-  } catch (e) {
-    console.error('Failed to save accounts to localStorage:', e);
-  }
-};
+const DEFAULT_ACCOUNT_NAME = 'Main Account';
+const DEFAULT_INITIAL_BALANCE = 10000;
 
 export function useAccounts() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Fetch accounts from Supabase
+  const fetchAccounts = useCallback(async () => {
+    if (!user) {
+      setAccounts([]);
+      setIsLoaded(true);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true }); // Keep consistent order
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        // Create default account if none exists
+        const defaultAccountPayload = {
+          user_id: user.id,
+          name: DEFAULT_ACCOUNT_NAME,
+          initial_balance: DEFAULT_INITIAL_BALANCE,
+          current_balance: DEFAULT_INITIAL_BALANCE
+        };
+
+        const { data: newAccount, error: createError } = await supabase
+          .from('accounts')
+          .insert(defaultAccountPayload)
+          .select()
+          .single();
+
+        if (createError) throw createError;
+
+        if (newAccount) {
+          setAccounts([{
+            id: newAccount.id,
+            name: newAccount.name,
+            initialBalance: newAccount.initial_balance,
+            currentBalance: newAccount.current_balance
+          }]);
+        }
+      } else {
+        // Map DB snake_case columns to camelCase
+        const mappedAccounts = data.map((acc: any) => ({
+          id: acc.id,
+          name: acc.name,
+          initialBalance: acc.initial_balance,
+          currentBalance: acc.current_balance
+        }));
+        setAccounts(mappedAccounts);
+      }
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      toast({ variant: "destructive", title: "Error", description: "Failed to load accounts." });
+    } finally {
+      setIsLoaded(true);
+    }
+  }, [user, toast]);
+
   useEffect(() => {
-    const stored = getStoredAccounts();
-    setAccounts(stored);
-    setIsLoaded(true);
-  }, []);
+    fetchAccounts();
+  }, [fetchAccounts]);
 
   const addAccount = useCallback(async (newAccount: Omit<Account, 'id' | 'currentBalance'>) => {
+    if (!user) return false;
     try {
-      const account: Account = {
-        id: crypto.randomUUID(),
+      const payload = {
+        user_id: user.id,
         name: newAccount.name,
-        initialBalance: newAccount.initialBalance,
-        currentBalance: newAccount.initialBalance,
+        initial_balance: newAccount.initialBalance,
+        current_balance: newAccount.initialBalance, // Default current balance to initial
       };
 
-      setAccounts(prev => {
-        const updated = [...prev, account];
-        saveStoredAccounts(updated);
-        return updated;
-      });
+      const { error } = await supabase
+        .from('accounts')
+        .insert(payload);
+
+      if (error) throw error;
 
       toast({ title: "Account Added", description: `"${newAccount.name}" has been created.` });
+      await fetchAccounts();
       return true;
     } catch (error) {
       console.error('Error adding account:', error);
       toast({ variant: "destructive", title: "Error", description: "Could not add account." });
       return false;
     }
-  }, [toast]);
+  }, [user, toast, fetchAccounts]);
 
   const updateAccount = useCallback(async (accountId: string, updatedData: Omit<Account, 'id' | 'currentBalance'>) => {
+    if (!user) return false;
     try {
-      setAccounts(prev => {
-        const updated = prev.map(acc => {
-          if (acc.id !== accountId) return acc;
+      // First, get the current account to calculate balance difference
+      const currentAccount = accounts.find(a => a.id === accountId);
+      if (!currentAccount) throw new Error("Account not found");
 
-          const balanceDifference = updatedData.initialBalance - acc.initialBalance;
-          const newCurrentBalance = (acc.currentBalance ?? acc.initialBalance) + balanceDifference;
+      const balanceDifference = updatedData.initialBalance - (currentAccount.initialBalance || 0);
+      const newCurrentBalance = (currentAccount.currentBalance || 0) + balanceDifference;
 
-          return {
-            ...acc,
-            name: updatedData.name,
-            initialBalance: updatedData.initialBalance,
-            currentBalance: newCurrentBalance,
-          };
-        });
-        saveStoredAccounts(updated);
-        return updated;
-      });
+      const payload = {
+        name: updatedData.name,
+        initial_balance: updatedData.initialBalance,
+        current_balance: newCurrentBalance
+      };
+
+      const { error } = await supabase
+        .from('accounts')
+        .update(payload)
+        .eq('id', accountId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
 
       toast({ title: "Account Updated", description: "Your account details have been saved." });
+      await fetchAccounts();
       return true;
     } catch (error) {
       console.error('Error updating account:', error);
       toast({ variant: "destructive", title: "Error", description: "Could not update account." });
       return false;
     }
-  }, [toast]);
+  }, [user, accounts, toast, fetchAccounts]);
 
   const deleteAccount = useCallback(async (accountId: string) => {
+    if (!user) return false;
+    if (accounts.length <= 1) {
+      toast({ variant: "destructive", title: "Cannot Delete", description: "You must have at least one account." });
+      return false;
+    }
+
     try {
-      setAccounts(prev => {
-        const updated = prev.filter(acc => acc.id !== accountId);
-        // Ensure at least one account exists
-        if (updated.length === 0) {
-          updated.push(DEFAULT_ACCOUNT);
-        }
-        saveStoredAccounts(updated);
-        return updated;
-      });
+      const { error } = await supabase
+        .from('accounts')
+        .delete()
+        .eq('id', accountId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
 
       toast({ title: "Account Deleted", description: `The account has been removed.` });
+      await fetchAccounts();
       return true;
     } catch (error) {
       console.error('Error deleting account:', error);
       toast({ variant: "destructive", title: "Error", description: "Could not delete account." });
       return false;
     }
-  }, [toast]);
+  }, [user, accounts.length, toast, fetchAccounts]);
 
   return { accounts, addAccount, updateAccount, deleteAccount, isLoaded };
 }

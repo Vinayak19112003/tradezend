@@ -4,8 +4,8 @@ import { createContext, useCallback, useContext, useMemo, type ReactNode, useSta
 import { Trade } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAccountContext } from './account-context';
-
-const TRADES_STORAGE_KEY = 'tradezend_trades';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/use-auth';
 
 interface TradesContextType {
     trades: Trade[];
@@ -19,46 +19,73 @@ interface TradesContextType {
 
 const TradesContext = createContext<TradesContextType | undefined>(undefined);
 
-// Helper function to get trades from localStorage
-const getStoredTrades = (): Trade[] => {
-    if (typeof window === 'undefined') return [];
-    try {
-        const stored = localStorage.getItem(TRADES_STORAGE_KEY);
-        if (!stored) return [];
-        const parsed = JSON.parse(stored);
-        return parsed.map((t: any) => ({
-            ...t,
-            date: new Date(t.date),
-        }));
-    } catch {
-        return [];
-    }
-};
-
-// Helper function to save trades to localStorage
-const saveStoredTrades = (trades: Trade[]): void => {
-    if (typeof window === 'undefined') return;
-    try {
-        localStorage.setItem(TRADES_STORAGE_KEY, JSON.stringify(trades));
-    } catch (e) {
-        console.error('Failed to save trades to localStorage:', e);
-    }
-};
-
 export function TradesProvider({ children }: { children: ReactNode }) {
     const { toast } = useToast();
     const { selectedAccountId } = useAccountContext();
+    const { user } = useAuth();
 
     const [allTrades, setAllTrades] = useState<Trade[]>([]);
     const [isTradesLoading, setIsTradesLoading] = useState(true);
 
-    // Load trades from localStorage on mount
-    useEffect(() => {
+    // Load trades from Supabase
+    const fetchTrades = useCallback(async () => {
+        if (!user) {
+            setAllTrades([]);
+            setIsTradesLoading(false);
+            return;
+        }
+
         setIsTradesLoading(true);
-        const stored = getStoredTrades();
-        setAllTrades(stored);
-        setIsTradesLoading(false);
-    }, []);
+        try {
+            const { data, error } = await supabase
+                .from('trades')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('date', { ascending: true }); // Ensure chronological order
+
+            if (error) throw error;
+
+            if (data) {
+                // Map DB snake_case columns to camelCase if needed, or if Supabase types match, use directly.
+                // Assuming exact field match for now based on previous SQL schema check.
+                // We need to parse dates back to Date objects.
+                const mappedTrades = data.map((t: any) => ({
+                    ...t,
+                    date: new Date(t.date),
+                    // Ensure arrays are initialized if null
+                    mistakes: t.mistakes || [],
+                    rulesFollowed: t.rules_followed || [], // DB is likely snake_case
+                    modelFollowed: t.model_followed || undefined,
+                    preTradeEmotion: t.pre_trade_emotion,
+                    postTradeEmotion: t.post_trade_emotion,
+                    marketContext: t.market_context,
+                    entryReason: t.entry_reason,
+                    tradeFeelings: t.trade_feelings,
+                    lossAnalysis: t.loss_analysis,
+                    screenshotURL: t.screenshot_url,
+                    accountSize: t.account_size,
+                    riskPercentage: t.risk_percentage,
+                    entryTime: t.entry_time,
+                    exitTime: t.exit_time,
+                    entryPrice: t.entry_price,
+                    exitPrice: t.exit_price,
+                    accountId: t.account_id,
+                    entryTimeFrame: t.entry_time_frame,
+                })) as Trade[];
+
+                setAllTrades(mappedTrades);
+            }
+        } catch (error) {
+            console.error('Error fetching trades:', error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to load trades.' });
+        } finally {
+            setIsTradesLoading(false);
+        }
+    }, [user, toast]);
+
+    useEffect(() => {
+        fetchTrades();
+    }, [fetchTrades]);
 
     // Filter trades by selected account
     const trades = useMemo(() => {
@@ -67,120 +94,231 @@ export function TradesProvider({ children }: { children: ReactNode }) {
     }, [allTrades, selectedAccountId]);
 
     const addTrade = useCallback(async (trade: Omit<Trade, 'id'>) => {
+        if (!user) return false;
         try {
-            const newTrade: Trade = {
-                ...trade,
-                id: crypto.randomUUID(),
-                date: new Date(trade.date),
+            // Prepare payload for DB (convert camelCase to snake_case)
+            const payload = {
+                user_id: user.id,
+                account_id: trade.accountId,
+                date: trade.date.toISOString(), // Send as ISO string
+                asset: trade.asset,
+                strategy: trade.strategy,
+                direction: trade.direction,
+                entry_time: trade.entryTime,
+                exit_time: trade.exitTime,
+                entry_price: trade.entryPrice,
+                sl: trade.sl,
+                rr: trade.rr,
+                exit_price: trade.exitPrice,
+                result: trade.result,
+                confidence: trade.confidence,
+                mistakes: trade.mistakes,
+                rules_followed: trade.rulesFollowed,
+                model_followed: trade.modelFollowed,
+                notes: trade.notes,
+                screenshot_url: trade.screenshotURL,
+                account_size: trade.accountSize,
+                risk_percentage: trade.riskPercentage,
+                pnl: trade.pnl,
+                ticket: trade.ticket,
+                pre_trade_emotion: trade.preTradeEmotion,
+                post_trade_emotion: trade.postTradeEmotion,
+                market_context: trade.marketContext,
+                entry_reason: trade.entryReason,
+                trade_feelings: trade.tradeFeelings,
+                loss_analysis: trade.lossAnalysis,
+                session: trade.session,
+                key_level: trade.keyLevel,
+                entry_time_frame: trade.entryTimeFrame,
             };
 
-            setAllTrades(prev => {
-                const updated = [...prev, newTrade].sort((a, b) =>
-                    new Date(a.date).getTime() - new Date(b.date).getTime()
-                );
-                saveStoredTrades(updated);
-                return updated;
-            });
+            const { data, error } = await supabase
+                .from('trades')
+                .insert(payload)
+                .select()
+                .single();
 
-            return true;
+            if (error) throw error;
+
+            if (data) {
+                const newTrade = {
+                    ...trade,
+                    id: data.id,
+                    // Re-construct the object ensuring local state matches DB
+                } as Trade;
+
+                await fetchTrades(); // Refresh list to get accurate state/sort
+                return true;
+            }
+            return false;
         } catch (error: any) {
             console.error("Error adding trade:", error);
+            toast({ variant: "destructive", title: "Error", description: error.message || "Could not save trade." });
             throw error;
         }
-    }, []);
+    }, [user, fetchTrades, toast]);
 
     const addMultipleTrades = useCallback(async (newTrades: Omit<Trade, 'id'>[]) => {
-        if (newTrades.length === 0) return { success: false, addedCount: 0 };
+        if (!user || newTrades.length === 0) return { success: false, addedCount: 0 };
 
         try {
-            const tradesToAdd: Trade[] = newTrades.map(trade => ({
-                ...trade,
-                id: crypto.randomUUID(),
-                date: new Date(trade.date),
+            const payload = newTrades.map(trade => ({
+                user_id: user.id,
+                account_id: trade.accountId,
+                date: trade.date.toISOString(),
+                asset: trade.asset,
+                strategy: trade.strategy,
+                direction: trade.direction,
+                entry_time: trade.entryTime,
+                exit_time: trade.exitTime,
+                entry_price: trade.entryPrice,
+                sl: trade.sl,
+                rr: trade.rr,
+                exit_price: trade.exitPrice,
+                result: trade.result,
+                confidence: trade.confidence,
+                mistakes: trade.mistakes,
+                rules_followed: trade.rulesFollowed,
+                model_followed: trade.modelFollowed,
+                notes: trade.notes,
+                screenshot_url: trade.screenshotURL,
+                account_size: trade.accountSize,
+                risk_percentage: trade.riskPercentage,
+                pnl: trade.pnl,
+                ticket: trade.ticket,
+                pre_trade_emotion: trade.preTradeEmotion,
+                post_trade_emotion: trade.postTradeEmotion,
+                market_context: trade.marketContext,
+                entry_reason: trade.entryReason,
+                trade_feelings: trade.tradeFeelings,
+                loss_analysis: trade.lossAnalysis,
+                session: trade.session,
+                key_level: trade.keyLevel,
+                entry_time_frame: trade.entryTimeFrame,
             }));
 
-            setAllTrades(prev => {
-                const updated = [...prev, ...tradesToAdd].sort((a, b) =>
-                    new Date(a.date).getTime() - new Date(b.date).getTime()
-                );
-                saveStoredTrades(updated);
-                return updated;
-            });
+            const { error } = await supabase
+                .from('trades')
+                .insert(payload);
+
+            if (error) throw error;
 
             toast({
                 title: "Import Successful",
                 description: `${newTrades.length} trades imported successfully.`,
             });
 
+            await fetchTrades();
             return { success: true, addedCount: newTrades.length };
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error batch adding trades:", error);
-            toast({ variant: "destructive", title: "Import Error", description: "Could not save the imported trades." });
+            toast({ variant: "destructive", title: "Import Error", description: error.message || "Could not save imported trades." });
             return { success: false, addedCount: 0 };
         }
-    }, [toast]);
+    }, [user, fetchTrades, toast]);
 
     const updateTrade = useCallback(async (trade: Trade) => {
-        if (!trade.id) {
-            throw new Error("Trade ID is required for update.");
-        }
+        if (!trade.id) throw new Error("Trade ID is required for update.");
+        if (!user) return false;
 
         try {
-            setAllTrades(prev => {
-                const updated = prev.map(t =>
-                    t.id === trade.id ? { ...trade, date: new Date(trade.date) } : t
-                ).sort((a, b) =>
-                    new Date(a.date).getTime() - new Date(b.date).getTime()
-                );
-                saveStoredTrades(updated);
-                return updated;
-            });
+            // Map to snake_case
+            const payload = {
+                account_id: trade.accountId,
+                date: trade.date.toISOString(),
+                asset: trade.asset,
+                strategy: trade.strategy,
+                direction: trade.direction,
+                entry_time: trade.entryTime,
+                exit_time: trade.exitTime,
+                entry_price: trade.entryPrice,
+                sl: trade.sl,
+                rr: trade.rr,
+                exit_price: trade.exitPrice,
+                result: trade.result,
+                confidence: trade.confidence,
+                mistakes: trade.mistakes,
+                rules_followed: trade.rulesFollowed,
+                model_followed: trade.modelFollowed,
+                notes: trade.notes,
+                screenshot_url: trade.screenshotURL,
+                account_size: trade.accountSize,
+                risk_percentage: trade.riskPercentage,
+                pnl: trade.pnl,
+                ticket: trade.ticket,
+                pre_trade_emotion: trade.preTradeEmotion,
+                post_trade_emotion: trade.postTradeEmotion,
+                market_context: trade.marketContext,
+                entry_reason: trade.entryReason,
+                trade_feelings: trade.tradeFeelings,
+                loss_analysis: trade.lossAnalysis,
+                session: trade.session,
+                key_level: trade.keyLevel,
+                entry_time_frame: trade.entryTimeFrame,
+            };
 
+            const { error } = await supabase
+                .from('trades')
+                .update(payload)
+                .eq('id', trade.id)
+                .eq('user_id', user.id); // Security: ensure user owns trade
+
+            if (error) throw error;
+
+            await fetchTrades();
             return true;
         } catch (error: any) {
             console.error("Error updating trade:", error);
+            toast({ variant: "destructive", title: "Error", description: error.message || "Could not update trade." });
             throw error;
         }
-    }, []);
+    }, [user, fetchTrades, toast]);
 
     const deleteTrade = useCallback(async (id: string) => {
+        if (!user) return false;
         try {
-            setAllTrades(prev => {
-                const updated = prev.filter(t => t.id !== id);
-                saveStoredTrades(updated);
-                return updated;
-            });
+            const { error } = await supabase
+                .from('trades')
+                .delete()
+                .eq('id', id)
+                .eq('user_id', user.id);
 
-            toast({ title: "Trade Deleted", description: "The trade has been removed from your log." });
+            if (error) throw error;
+
+            toast({ title: "Trade Deleted", description: "The trade has been removed." });
+            await fetchTrades();
             return true;
         } catch (error: any) {
             console.error("Error deleting trade:", error);
-            toast({ variant: "destructive", title: "Error Deleting Trade", description: error.message || "Could not delete the trade." });
+            toast({ variant: "destructive", title: "Error", description: error.message || "Could not delete trade." });
             return false;
         }
-    }, [toast]);
+    }, [user, fetchTrades, toast]);
 
     const deleteAllTrades = useCallback(async (accountId: string) => {
-        if (!accountId) return false;
+        if (!accountId || !user) return false;
 
         try {
-            setAllTrades(prev => {
-                const updated = prev.filter(t => t.accountId !== accountId);
-                saveStoredTrades(updated);
-                return updated;
-            });
+            const { error } = await supabase
+                .from('trades')
+                .delete()
+                .eq('account_id', accountId)
+                .eq('user_id', user.id);
+
+            if (error) throw error;
 
             toast({
                 title: "All Trades Cleared",
                 description: "All trades for this account have been deleted.",
             });
+            await fetchTrades();
             return true;
         } catch (error) {
             console.error("Error deleting all trades:", error);
             toast({ variant: "destructive", title: "Error", description: "Could not clear trade log." });
             return false;
         }
-    }, [toast]);
+    }, [user, fetchTrades, toast]);
 
     const value = useMemo(() => ({
         trades,
