@@ -7,6 +7,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Monitor, Moon, Settings, Sun, LogOut, Tv } from 'lucide-react';
 import { useStreamerMode } from "@/contexts/streamer-mode-context";
 import SwitchButton from "../ui/switch-button";
+import { cn } from "@/lib/utils";
 
 // --- Dropdown Primitives ---
 
