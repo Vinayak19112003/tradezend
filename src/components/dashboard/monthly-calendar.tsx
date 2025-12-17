@@ -24,6 +24,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StreamerModeText } from '@/components/streamer-mode-text';
 import { useCurrency } from '@/contexts/currency-context';
+import { GlassCard, GlassCardHeader, GlassCardContent, GlassCardTitle } from "@/components/ui/glass-card";
 
 type MonthlyCalendarProps = {
     trades: Trade[];
