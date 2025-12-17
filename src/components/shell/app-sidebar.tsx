@@ -28,7 +28,7 @@ import { Logo } from "../logo";
 const NAV_ITEMS = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { label: "Journal", icon: BookOpen, href: "/journal" },
-    { label: "Performance", icon: BarChart2, href: "/analytics" },
+    { label: "Analytics", icon: BarChart2, href: "/analytics" },
 ];
 
 export function AppSidebar() {
