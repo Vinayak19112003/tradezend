@@ -74,38 +74,45 @@ export default function DashboardPage() {
       </div>
 
       <div className="space-y-4 md:space-y-8 relative z-10">
-          <PageHeader 
-            title="Dashboard" 
-            description="Welcome back, Trader."
-            action={<DateRangeFilter date={dateRange} onDateChange={setDateRange} />}
-          />
+        <PageHeader
+          title="Dashboard"
+          description="Welcome back, Trader."
+          action={<DateRangeFilter date={dateRange} onDateChange={setDateRange} />}
+        />
 
-          <SummaryBanner trades={summaryTrades} />
+        <SummaryBanner trades={summaryTrades} />
 
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <span className="w-1 h-6 bg-blue-500 rounded-full" />
-                Key Performance Indicators
-              </h2>
-              <StatsCards trades={filteredTrades} />
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-blue-500 rounded-full" />
+              Key Performance Indicators
+            </h2>
+            <StatsCards trades={filteredTrades} />
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-purple-500 rounded-full" />
+              Monthly Overview
+            </h2>
+            {/* Full Width Calendar */}
+            <div className="mb-8">
+              <MonthlyCalendar trades={allTrades} onDateSelect={handleCalendarDateSelect} />
             </div>
 
-            <div>
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <span className="w-1 h-6 bg-purple-500 rounded-full" />
-                Analytics Overview
-              </h2>
-              <div className="grid grid-cols-1 gap-4 md:gap-6">
-                <DirectionalAnalysis trades={filteredTrades} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <MonthlyCalendar trades={allTrades} onDateSelect={handleCalendarDateSelect} />
-                  <EquityCurveChart trades={filteredTrades} />
-                </div>
-              </div>
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 bg-indigo-500 rounded-full" />
+              Performance Analysis
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Equity Curve moved down */}
+              <EquityCurveChart trades={filteredTrades} />
+              <DirectionalAnalysis trades={filteredTrades} />
             </div>
           </div>
         </div>
       </div>
+    </div>
   );
 }
