@@ -1,82 +1,68 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from './use-auth';
 import type { Account } from '@/lib/types';
 import { useToast } from './use-toast';
 
+const ACCOUNTS_STORAGE_KEY = 'tradezend_accounts';
+const DEFAULT_ACCOUNT: Account = {
+  id: 'default-account',
+  name: 'Main Account',
+  initialBalance: 10000,
+  currentBalance: 10000,
+};
+
+// Helper function to get accounts from localStorage
+const getStoredAccounts = (): Account[] => {
+  if (typeof window === 'undefined') return [DEFAULT_ACCOUNT];
+  try {
+    const stored = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
+    if (!stored) {
+      // Create default account if none exists
+      localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify([DEFAULT_ACCOUNT]));
+      return [DEFAULT_ACCOUNT];
+    }
+    return JSON.parse(stored);
+  } catch {
+    return [DEFAULT_ACCOUNT];
+  }
+};
+
+// Helper function to save accounts to localStorage
+const saveStoredAccounts = (accounts: Account[]): void => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts));
+  } catch (e) {
+    console.error('Failed to save accounts to localStorage:', e);
+  }
+};
+
 export function useAccounts() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      setAccounts([]);
-      setIsLoaded(true);
-      return;
-    }
-
-    const fetchAccounts = async () => {
-      const { data, error } = await supabase
-        .from('accounts')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching accounts:', error);
-        setIsLoaded(true);
-        return;
-      }
-
-      const mappedAccounts: Account[] = (data || []).map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        initialBalance: row.initial_balance,
-        currentBalance: row.current_balance,
-      }));
-
-      setAccounts(mappedAccounts);
-      setIsLoaded(true);
-    };
-
-    fetchAccounts();
-
-    // Subscribe to realtime changes
-    const channel = supabase
-      .channel('accounts_changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'accounts',
-        filter: `user_id=eq.${user.id}`
-      }, () => {
-        fetchAccounts();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
+    const stored = getStoredAccounts();
+    setAccounts(stored);
+    setIsLoaded(true);
+  }, []);
 
   const addAccount = useCallback(async (newAccount: Omit<Account, 'id' | 'currentBalance'>) => {
-    if (!user) return false;
-
     try {
-      const { error } = await supabase
-        .from('accounts')
-        .insert({
-          user_id: user.id,
-          name: newAccount.name,
-          initial_balance: newAccount.initialBalance,
-          current_balance: newAccount.initialBalance,
-        });
+      const account: Account = {
+        id: crypto.randomUUID(),
+        name: newAccount.name,
+        initialBalance: newAccount.initialBalance,
+        currentBalance: newAccount.initialBalance,
+      };
 
-      if (error) throw error;
+      setAccounts(prev => {
+        const updated = [...prev, account];
+        saveStoredAccounts(updated);
+        return updated;
+      });
 
       toast({ title: "Account Added", description: `"${newAccount.name}" has been created.` });
       return true;
@@ -85,29 +71,27 @@ export function useAccounts() {
       toast({ variant: "destructive", title: "Error", description: "Could not add account." });
       return false;
     }
-  }, [user, toast]);
+  }, [toast]);
 
   const updateAccount = useCallback(async (accountId: string, updatedData: Omit<Account, 'id' | 'currentBalance'>) => {
-    if (!user) return false;
-
     try {
-      // Get current account to calculate balance difference
-      const currentAccount = accounts.find((acc: Account) => acc.id === accountId);
-      if (!currentAccount) return false;
+      setAccounts(prev => {
+        const updated = prev.map(acc => {
+          if (acc.id !== accountId) return acc;
 
-      const balanceDifference = updatedData.initialBalance - currentAccount.initialBalance;
-      const newCurrentBalance = (currentAccount.currentBalance ?? currentAccount.initialBalance) + balanceDifference;
+          const balanceDifference = updatedData.initialBalance - acc.initialBalance;
+          const newCurrentBalance = (acc.currentBalance ?? acc.initialBalance) + balanceDifference;
 
-      const { error } = await supabase
-        .from('accounts')
-        .update({
-          name: updatedData.name,
-          initial_balance: updatedData.initialBalance,
-          current_balance: newCurrentBalance,
-        })
-        .eq('id', accountId);
-
-      if (error) throw error;
+          return {
+            ...acc,
+            name: updatedData.name,
+            initialBalance: updatedData.initialBalance,
+            currentBalance: newCurrentBalance,
+          };
+        });
+        saveStoredAccounts(updated);
+        return updated;
+      });
 
       toast({ title: "Account Updated", description: "Your account details have been saved." });
       return true;
@@ -116,18 +100,19 @@ export function useAccounts() {
       toast({ variant: "destructive", title: "Error", description: "Could not update account." });
       return false;
     }
-  }, [user, accounts, toast]);
+  }, [toast]);
 
   const deleteAccount = useCallback(async (accountId: string) => {
-    if (!user) return false;
-
     try {
-      const { error } = await supabase
-        .from('accounts')
-        .delete()
-        .eq('id', accountId);
-
-      if (error) throw error;
+      setAccounts(prev => {
+        const updated = prev.filter(acc => acc.id !== accountId);
+        // Ensure at least one account exists
+        if (updated.length === 0) {
+          updated.push(DEFAULT_ACCOUNT);
+        }
+        saveStoredAccounts(updated);
+        return updated;
+      });
 
       toast({ title: "Account Deleted", description: `The account has been removed.` });
       return true;
@@ -136,7 +121,7 @@ export function useAccounts() {
       toast({ variant: "destructive", title: "Error", description: "Could not delete account." });
       return false;
     }
-  }, [user, toast]);
+  }, [toast]);
 
   return { accounts, addAccount, updateAccount, deleteAccount, isLoaded };
 }

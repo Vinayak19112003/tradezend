@@ -1,84 +1,76 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from './use-auth';
 import { useToast } from './use-toast';
 
+const STRATEGIES_STORAGE_KEY = 'tradezend_strategies';
+const DEFAULT_STRATEGIES = ['Breakout', 'Trend Following', 'Mean Reversion', 'Scalping'];
+
+const getStoredStrategies = (): string[] => {
+  if (typeof window === 'undefined') return DEFAULT_STRATEGIES;
+  try {
+    const stored = localStorage.getItem(STRATEGIES_STORAGE_KEY);
+    if (!stored) {
+      localStorage.setItem(STRATEGIES_STORAGE_KEY, JSON.stringify(DEFAULT_STRATEGIES));
+      return DEFAULT_STRATEGIES;
+    }
+    return JSON.parse(stored);
+  } catch {
+    return DEFAULT_STRATEGIES;
+  }
+};
+
+const saveStoredStrategies = (strategies: string[]): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STRATEGIES_STORAGE_KEY, JSON.stringify(strategies));
+};
+
 export function useStrategies() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [strategies, setStrategies] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      setStrategies([]);
-      setIsLoaded(true);
-      return;
-    }
-
-    const fetchStrategies = async () => {
-      const { data, error } = await supabase
-        .from('strategies')
-        .select('name')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching strategies:', error);
-      }
-
-      setStrategies((data || []).map((row: any) => row.name));
-      setIsLoaded(true);
-    };
-
-    fetchStrategies();
-  }, [user]);
+    setStrategies(getStoredStrategies());
+    setIsLoaded(true);
+  }, []);
 
   const addStrategy = useCallback(async (strategy: string) => {
-    if (!user) return false;
-
     try {
-      const { error } = await supabase
-        .from('strategies')
-        .insert({ user_id: user.id, name: strategy });
+      if (strategies.includes(strategy)) {
+        toast({ variant: "destructive", title: "Error", description: "Strategy already exists." });
+        return false;
+      }
 
-      if (error) throw error;
+      setStrategies(prev => {
+        const updated = [...prev, strategy];
+        saveStoredStrategies(updated);
+        return updated;
+      });
 
       toast({ title: "Strategy Added", description: `"${strategy}" has been added.` });
-      setStrategies(prev => [...prev, strategy]);
       return true;
-    } catch (error: any) {
-      if (error.code === '23505') {
-        toast({ variant: "destructive", title: "Error", description: "Strategy already exists." });
-      } else {
-        toast({ variant: "destructive", title: "Error", description: "Could not add strategy." });
-      }
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Could not add strategy." });
       return false;
     }
-  }, [user, toast]);
+  }, [strategies, toast]);
 
   const deleteStrategy = useCallback(async (strategy: string) => {
-    if (!user) return false;
-
     try {
-      const { error } = await supabase
-        .from('strategies')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('name', strategy);
-
-      if (error) throw error;
+      setStrategies(prev => {
+        const updated = prev.filter(s => s !== strategy);
+        saveStoredStrategies(updated);
+        return updated;
+      });
 
       toast({ title: "Strategy Deleted", description: `"${strategy}" has been removed.` });
-      setStrategies(prev => prev.filter(s => s !== strategy));
       return true;
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Could not delete strategy." });
       return false;
     }
-  }, [user, toast]);
+  }, [toast]);
 
   return { strategies, addStrategy, deleteStrategy, isLoaded };
 }

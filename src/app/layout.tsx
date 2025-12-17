@@ -33,22 +33,22 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={cn("font-body antialiased")}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <AuthProvider>
-              <StreamerModeProvider>
-                  <CurrencyProvider>
-                      {children}
-                      <Toaster />
-                  </CurrencyProvider>
-              </StreamerModeProvider>
-            </AuthProvider>
-          </ThemeProvider>
+      <body className={cn("font-body antialiased")} suppressHydrationWarning>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <StreamerModeProvider>
+              <CurrencyProvider>
+                {children}
+                <Toaster />
+              </CurrencyProvider>
+            </StreamerModeProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

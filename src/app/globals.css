@@ -5,25 +5,25 @@
 
 @layer base {
   :root {
-    --background: 220 50% 98%; /* Soft warm neutral background */
-    --foreground: 240 10% 12%; /* Dark gray for main headings */
-    --card: 220 25% 94%; /* Slightly darker shade for cards */
+    --background: 220 50% 98%;
+    --foreground: 240 10% 12%;
+    --card: 220 25% 94%;
     --card-foreground: 240 10% 12%;
     --popover: 220 25% 94%;
     --popover-foreground: 240 10% 12%;
-    --primary: 262.1 80% 55%; /* Slightly desaturated primary */
+    --primary: 262.1 80% 55%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 220 14% 90%; /* Gray tint for secondary elements */
-    --secondary-foreground: 240 5% 35%; /* Softer body text color */
+    --secondary: 220 14% 90%;
+    --secondary-foreground: 240 5% 35%;
     --muted: 220 14% 90%;
-    --muted-foreground: 240 5% 45%; /* Softer muted text color */
+    --muted-foreground: 240 5% 45%;
     --accent: 220 14% 90%;
     --accent-foreground: 240 10% 12%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --success: 142.1 76.2% 36.3%;
     --success-foreground: 0 0% 100%;
-    --border: 0 0% 100% / 0.05; /* rgba(255,255,255,0.05) */
+    --border: 220 14% 85%;
     --input: 220 15% 88%;
     --ring: 262.1 80% 55%;
     --radius: 1rem;
@@ -35,29 +35,32 @@
   }
 
   .dark {
-    --background: 225 31% 8%; /* #0B0F19 */
-    --foreground: 215 14% 92%; /* #E5E7EB */
-    --card: 222 25% 11%; /* #111827 */
-    --card-foreground: 215 14% 92%; /* #E5E7EB */
-    --popover: 225 31% 8%;
-    --popover-foreground: 215 14% 92%;
-    --primary: 217 91% 60%; /* #3B82F6 - Electric Blue */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 222 25% 15%;
+    --background: 222 47% 5%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 6%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 5%;
+    --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 224 71% 12%;
-    --muted-foreground: 220 9% 65%; /* #9CA3AF */
-    --accent: 222 25% 15%;
+    --muted: 217 33% 12%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 100% 65%; /* #FF4C4C - Crimson Red */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --success: 145 100% 45%; /* #00E676 - Emerald Green */
-    --success-foreground: 0 0% 0%;
-    --border: 0 0% 100% / 0.05; /* rgba(255,255,255,0.05) */
-    --input: 222 25% 15%;
+    --success: 142 71% 45%;
+    --success-foreground: 222 47% 5%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
     --ring: 217 91% 60%;
-    --chart-1: 145 100% 45%;
-    --chart-2: 0 100% 65%;
+    --chart-1: 142 71% 45%;
+    --chart-2: 0 84% 60%;
+    --chart-3: 217 91% 60%;
+    --chart-4: 47 95% 55%;
+    --chart-5: 262 83% 58%;
   }
 }
 
@@ -67,17 +70,16 @@
   }
   body {
     @apply bg-background text-foreground;
-    transition-property: color, background-color;
-    transition-duration: 0.2s;
-    transition-timing-function: ease-in-out;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* This is the key to the seamless animation.
-    The @property rule tells the browser that '--angle' is a custom property
-    of type <angle>. This allows the browser to smoothly interpolate it
-    during animations, preventing the "jump" at the end of the loop.
-  */
   @property --angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
+  
+  @property --gradient-angle {
     syntax: '<angle>';
     initial-value: 0deg;
     inherits: false;
@@ -85,9 +87,118 @@
 }
 
 @layer utilities {
-    @keyframes shimmer-spin {
-      to {
-        --angle: 360deg;
-      }
+  @keyframes shimmer-spin {
+    to {
+      --angle: 360deg;
     }
+  }
+  
+  @keyframes gradient-rotate {
+    0% {
+      --gradient-angle: 0deg;
+    }
+    100% {
+      --gradient-angle: 360deg;
+    }
+  }
+  
+  @keyframes pulse-glow {
+    0%, 100% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+  
+  .gradient-border {
+    position: relative;
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+  }
+  
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      var(--gradient-angle),
+      hsl(var(--primary) / 0.5),
+      hsl(var(--success) / 0.5),
+      hsl(var(--primary) / 0.5)
+    );
+    -webkit-mask: 
+      linear-gradient(#fff 0 0) content-box, 
+      linear-gradient(#fff 0 0);
+    mask: 
+      linear-gradient(#fff 0 0) content-box, 
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: gradient-rotate 4s linear infinite;
+    pointer-events: none;
+  }
+  
+  .glass {
+    background: hsl(var(--card) / 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  .glass-strong {
+    background: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  
+  .glow-success {
+    box-shadow: 0 0 20px hsl(var(--success) / 0.3), 0 0 40px hsl(var(--success) / 0.1);
+  }
+  
+  .glow-destructive {
+    box-shadow: 0 0 20px hsl(var(--destructive) / 0.3), 0 0 40px hsl(var(--destructive) / 0.1);
+  }
+  
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3), 0 0 40px hsl(var(--primary) / 0.1);
+  }
+  
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--success)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .bg-gradient-radial {
+    background: radial-gradient(ellipse at top, hsl(var(--primary) / 0.15), transparent 50%);
+  }
+  
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -15px hsl(var(--primary) / 0.2);
+  }
 }

@@ -19,16 +19,16 @@ import Link from 'next/link';
 
 export const Header = React.memo(function Header() {
     const { openForm } = useTradeForm();
-    
+
     return (
-        <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-md px-4 md:px-6">
+        <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border/50 bg-background/60 backdrop-blur-xl px-4 md:px-6 shadow-sm">
             <Link href="/dashboard" className="mr-6 flex items-center">
                 <Logo />
             </Link>
-            
-            <div className='ml-auto flex items-center gap-2'>
+
+            <div className='ml-auto flex items-center gap-3'>
                 <AccountSwitcher />
-                <ShimmerButton onClick={() => openForm()} className="h-9">
+                <ShimmerButton onClick={() => openForm()} className="h-9 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-shadow duration-300">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     <span>Add Trade</span>
                 </ShimmerButton>

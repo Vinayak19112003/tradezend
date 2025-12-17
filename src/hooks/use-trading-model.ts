@@ -1,84 +1,58 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from './use-auth';
 import { type TradingModel } from '@/lib/types';
 import { useToast } from './use-toast';
 
 export type ModelSection = keyof TradingModel;
 
+const TRADING_MODEL_STORAGE_KEY = 'tradezend_trading_model';
 const DEFAULT_MODEL: TradingModel = {
-    week: [],
-    day: [],
-    trigger: [],
-    ltf: [],
+    week: ['HTF Trend Analysis', 'Key Levels Identification'],
+    day: ['Daily Bias', 'News Check'],
+    trigger: ['Liquidity Sweep', 'Order Block'],
+    ltf: ['Entry Confirmation', 'Risk Calculation'],
+};
+
+const getStoredModel = (): TradingModel => {
+    if (typeof window === 'undefined') return DEFAULT_MODEL;
+    try {
+        const stored = localStorage.getItem(TRADING_MODEL_STORAGE_KEY);
+        if (!stored) {
+            localStorage.setItem(TRADING_MODEL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL));
+            return DEFAULT_MODEL;
+        }
+        return JSON.parse(stored);
+    } catch {
+        return DEFAULT_MODEL;
+    }
+};
+
+const saveStoredModel = (model: TradingModel): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(TRADING_MODEL_STORAGE_KEY, JSON.stringify(model));
 };
 
 export function useTradingModel() {
-    const { user } = useAuth();
     const { toast } = useToast();
     const [model, setModel] = useState<TradingModel>(DEFAULT_MODEL);
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
-        if (!user) {
-            setModel(DEFAULT_MODEL);
-            setIsLoaded(true);
-            return;
-        }
-
-        const fetchModel = async () => {
-            const { data, error } = await supabase
-                .from('trading_model')
-                .select('week, day, trigger, ltf')
-                .eq('user_id', user.id)
-                .maybeSingle();
-
-            if (error) {
-                console.error('Error fetching trading model:', error);
-            }
-
-            if (data) {
-                setModel({
-                    week: data.week || [],
-                    day: data.day || [],
-                    trigger: data.trigger || [],
-                    ltf: data.ltf || [],
-                });
-            }
-
-            setIsLoaded(true);
-        };
-
-        fetchModel();
-    }, [user]);
+        setModel(getStoredModel());
+        setIsLoaded(true);
+    }, []);
 
     const updateWholeObject = useCallback(async (newModel: TradingModel) => {
-        if (!user) return false;
-
         try {
-            const { error } = await supabase
-                .from('trading_model')
-                .upsert({
-                    user_id: user.id,
-                    week: newModel.week,
-                    day: newModel.day,
-                    trigger: newModel.trigger,
-                    ltf: newModel.ltf,
-                }, {
-                    onConflict: 'user_id'
-                });
-
-            if (error) throw error;
-
             setModel(newModel);
+            saveStoredModel(newModel);
             return true;
         } catch (error) {
             console.error('Error updating trading model:', error);
             return false;
         }
-    }, [user]);
+    }, []);
 
     const addItem = useCallback(async (section: ModelSection, item: string) => {
         const newModel = { ...model };

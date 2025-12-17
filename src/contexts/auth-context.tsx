@@ -1,12 +1,16 @@
 'use client';
 
 import { createContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { User, Session } from '@supabase/supabase-js';
+
+// Minimal mock user for local-only mode
+interface MockUser {
+  id: string;
+  email: string;
+}
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: MockUser | null;
+  session: null;
   isLoading: boolean;
   logout: () => Promise<void>;
 }
@@ -14,46 +18,25 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  // In local-only mode, we always have a "logged in" mock user
+  const [user] = useState<MockUser>({ id: 'local-user', email: 'local@user.app' });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabase) {
-      setIsLoading(false);
-      return;
-    }
-    
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    // Simulate auth check completing
+    setIsLoading(false);
   }, []);
 
   const logout = useCallback(async () => {
-    try {
-      if (supabase) {
-        await supabase.auth.signOut();
-      }
-    } catch (error) {
-      console.error("Error signing out: ", error);
+    // In local mode, logout just clears local storage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('tradezend_trades');
+      localStorage.removeItem('tradezend_accounts');
+      window.location.reload();
     }
   }, []);
 
-  const value = useMemo(() => ({ user, session, isLoading, logout }), [user, session, isLoading, logout]);
+  const value = useMemo(() => ({ user, session: null, isLoading, logout }), [user, isLoading, logout]);
 
-  // Always render children so the app doesn't get stuck on a full-screen spinner.
-  // Components can still read `isLoading` from the context and show local loaders.
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -1,75 +1,53 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from './use-auth';
 import { useToast } from './use-toast';
+
+const TARGETS_STORAGE_KEY = 'tradezend_targets';
 
 type Targets = {
     profit: number;
     loss: number;
 };
 
+const DEFAULT_TARGETS: Targets = { profit: 500, loss: 200 };
+
+const getStoredTargets = (): Targets => {
+    if (typeof window === 'undefined') return DEFAULT_TARGETS;
+    try {
+        const stored = localStorage.getItem(TARGETS_STORAGE_KEY);
+        if (!stored) {
+            localStorage.setItem(TARGETS_STORAGE_KEY, JSON.stringify(DEFAULT_TARGETS));
+            return DEFAULT_TARGETS;
+        }
+        return JSON.parse(stored);
+    } catch {
+        return DEFAULT_TARGETS;
+    }
+};
+
+const saveStoredTargets = (targets: Targets): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(TARGETS_STORAGE_KEY, JSON.stringify(targets));
+};
+
 export function useTargets() {
-    const { user } = useAuth();
     const { toast } = useToast();
-    const [targets, setTargets] = useState<Targets>({ profit: 0, loss: 0 });
+    const [targets, setTargets] = useState<Targets>(DEFAULT_TARGETS);
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
-        if (!user) {
-            setTargets({ profit: 0, loss: 0 });
-            setIsLoaded(true);
-            return;
-        }
-
-        const fetchTargets = async () => {
-            const { data, error } = await supabase
-                .from('user_settings')
-                .select('daily_target, weekly_target, monthly_target')
-                .eq('user_id', user.id)
-                .maybeSingle();
-
-            if (error) {
-                console.error('Error fetching targets:', error);
-            }
-
-            if (data) {
-                setTargets({
-                    profit: data.daily_target || 0,
-                    loss: data.weekly_target || 0,
-                });
-            }
-
-            setIsLoaded(true);
-        };
-
-        fetchTargets();
-    }, [user]);
+        setTargets(getStoredTargets());
+        setIsLoaded(true);
+    }, []);
 
     const updateTargets = useCallback(async (newTargets: Partial<Targets>) => {
-        if (!user) {
-            toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to update targets.' });
-            return;
-        }
-
         try {
-            const updateData: any = {};
-            if (newTargets.profit !== undefined) updateData.daily_target = newTargets.profit;
-            if (newTargets.loss !== undefined) updateData.weekly_target = newTargets.loss;
-
-            const { error } = await supabase
-                .from('user_settings')
-                .upsert({
-                    user_id: user.id,
-                    ...updateData,
-                }, {
-                    onConflict: 'user_id'
-                });
-
-            if (error) throw error;
-
-            setTargets(prev => ({ ...prev, ...newTargets }));
+            setTargets(prev => {
+                const updated = { ...prev, ...newTargets };
+                saveStoredTargets(updated);
+                return updated;
+            });
             toast({
                 title: "Targets Updated",
                 description: "Your profit and loss targets have been saved.",
@@ -82,7 +60,7 @@ export function useTargets() {
                 description: "Could not save your targets.",
             });
         }
-    }, [user, toast]);
+    }, [toast]);
 
     return { targets, updateTargets, isLoaded };
 }

@@ -1,84 +1,76 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from './use-auth';
 import { useToast } from './use-toast';
 
+const MISTAKE_TAGS_STORAGE_KEY = 'tradezend_mistake_tags';
+const DEFAULT_MISTAKE_TAGS = ['FOMO', 'Overtrading', 'Early Exit', 'Revenge Trade', 'No Stop Loss', 'Wrong Position Size'];
+
+const getStoredMistakeTags = (): string[] => {
+  if (typeof window === 'undefined') return DEFAULT_MISTAKE_TAGS;
+  try {
+    const stored = localStorage.getItem(MISTAKE_TAGS_STORAGE_KEY);
+    if (!stored) {
+      localStorage.setItem(MISTAKE_TAGS_STORAGE_KEY, JSON.stringify(DEFAULT_MISTAKE_TAGS));
+      return DEFAULT_MISTAKE_TAGS;
+    }
+    return JSON.parse(stored);
+  } catch {
+    return DEFAULT_MISTAKE_TAGS;
+  }
+};
+
+const saveStoredMistakeTags = (tags: string[]): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(MISTAKE_TAGS_STORAGE_KEY, JSON.stringify(tags));
+};
+
 export function useMistakeTags() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [mistakeTags, setMistakeTags] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      setMistakeTags([]);
-      setIsLoaded(true);
-      return;
-    }
-
-    const fetchMistakeTags = async () => {
-      const { data, error } = await supabase
-        .from('mistake_tags')
-        .select('name')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching mistake tags:', error);
-      }
-
-      setMistakeTags((data || []).map((row: any) => row.name));
-      setIsLoaded(true);
-    };
-
-    fetchMistakeTags();
-  }, [user]);
+    setMistakeTags(getStoredMistakeTags());
+    setIsLoaded(true);
+  }, []);
 
   const addMistakeTag = useCallback(async (tag: string) => {
-    if (!user) return false;
-
     try {
-      const { error } = await supabase
-        .from('mistake_tags')
-        .insert({ user_id: user.id, name: tag });
+      if (mistakeTags.includes(tag)) {
+        toast({ variant: "destructive", title: "Error", description: "Tag already exists." });
+        return false;
+      }
 
-      if (error) throw error;
+      setMistakeTags(prev => {
+        const updated = [...prev, tag];
+        saveStoredMistakeTags(updated);
+        return updated;
+      });
 
       toast({ title: "Mistake Tag Added", description: `"${tag}" has been added.` });
-      setMistakeTags(prev => [...prev, tag]);
       return true;
-    } catch (error: any) {
-      if (error.code === '23505') {
-        toast({ variant: "destructive", title: "Error", description: "Tag already exists." });
-      } else {
-        toast({ variant: "destructive", title: "Error", description: "Could not add tag." });
-      }
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Could not add tag." });
       return false;
     }
-  }, [user, toast]);
+  }, [mistakeTags, toast]);
 
   const deleteMistakeTag = useCallback(async (tag: string) => {
-    if (!user) return false;
-
     try {
-      const { error } = await supabase
-        .from('mistake_tags')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('name', tag);
-
-      if (error) throw error;
+      setMistakeTags(prev => {
+        const updated = prev.filter(t => t !== tag);
+        saveStoredMistakeTags(updated);
+        return updated;
+      });
 
       toast({ title: "Mistake Tag Deleted", description: `"${tag}" has been removed.` });
-      setMistakeTags(prev => prev.filter(t => t !== tag));
       return true;
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Could not delete tag." });
       return false;
     }
-  }, [user, toast]);
+  }, [toast]);
 
   return { mistakeTags, addMistakeTag, deleteMistakeTag, isLoaded };
 }

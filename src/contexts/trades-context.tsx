@@ -1,17 +1,17 @@
 'use client';
 
 import { createContext, useCallback, useContext, useMemo, type ReactNode, useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { Trade } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
 import { useAccountContext } from './account-context';
+
+const TRADES_STORAGE_KEY = 'tradezend_trades';
 
 interface TradesContextType {
     trades: Trade[];
     isTradesLoading: boolean;
     addTrade: (trade: Omit<Trade, 'id'>) => Promise<boolean>;
-    addMultipleTrades: (newTrades: Omit<Trade, 'id'>[]) => Promise<{success: boolean, addedCount: number}>;
+    addMultipleTrades: (newTrades: Omit<Trade, 'id'>[]) => Promise<{ success: boolean, addedCount: number }>;
     updateTrade: (trade: Trade) => Promise<boolean>;
     deleteTrade: (id: string) => Promise<boolean>;
     deleteAllTrades: (accountId: string) => Promise<boolean>;
@@ -19,219 +19,97 @@ interface TradesContextType {
 
 const TradesContext = createContext<TradesContextType | undefined>(undefined);
 
+// Helper function to get trades from localStorage
+const getStoredTrades = (): Trade[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+        const stored = localStorage.getItem(TRADES_STORAGE_KEY);
+        if (!stored) return [];
+        const parsed = JSON.parse(stored);
+        return parsed.map((t: any) => ({
+            ...t,
+            date: new Date(t.date),
+        }));
+    } catch {
+        return [];
+    }
+};
+
+// Helper function to save trades to localStorage
+const saveStoredTrades = (trades: Trade[]): void => {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.setItem(TRADES_STORAGE_KEY, JSON.stringify(trades));
+    } catch (e) {
+        console.error('Failed to save trades to localStorage:', e);
+    }
+};
+
 export function TradesProvider({ children }: { children: ReactNode }) {
-    const { user } = useAuth();
     const { toast } = useToast();
     const { selectedAccountId } = useAccountContext();
 
-    const [trades, setTrades] = useState<Trade[]>([]);
+    const [allTrades, setAllTrades] = useState<Trade[]>([]);
     const [isTradesLoading, setIsTradesLoading] = useState(true);
 
+    // Load trades from localStorage on mount
     useEffect(() => {
-        if (!user || !selectedAccountId) {
-            setTrades([]);
-            setIsTradesLoading(false);
-            return;
-        }
-
         setIsTradesLoading(true);
+        const stored = getStoredTrades();
+        setAllTrades(stored);
+        setIsTradesLoading(false);
+    }, []);
 
-        const fetchTrades = async () => {
-            const { data, error } = await supabase
-                .from('trades')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('account_id', selectedAccountId)
-                .order('date', { ascending: true });
-
-            if (error) {
-                console.error("Error fetching trades:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "Could not fetch trade data."
-                });
-                setIsTradesLoading(false);
-                return;
-            }
-
-            const fetchedTrades = (data || []).map(row => ({
-                id: row.id,
-                accountId: row.account_id,
-                date: new Date(row.date),
-                asset: row.asset,
-                strategy: row.strategy,
-                direction: row.direction,
-                entryTime: row.entry_time || undefined,
-                exitTime: row.exit_time || undefined,
-                entryPrice: row.entry_price,
-                sl: row.sl,
-                rr: row.rr,
-                exitPrice: row.exit_price,
-                result: row.result,
-                confidence: row.confidence,
-                mistakes: row.mistakes,
-                rulesFollowed: row.rules_followed,
-                modelFollowed: row.model_followed,
-                notes: row.notes || undefined,
-                screenshotURL: row.screenshot_url,
-                accountSize: row.account_size,
-                riskPercentage: row.risk_percentage,
-                pnl: row.pnl,
-                ticket: row.ticket || undefined,
-                preTradeEmotion: row.pre_trade_emotion || undefined,
-                postTradeEmotion: row.post_trade_emotion || undefined,
-                marketContext: row.market_context || undefined,
-                entryReason: row.entry_reason || undefined,
-                tradeFeelings: row.trade_feelings || undefined,
-                lossAnalysis: row.loss_analysis || undefined,
-                session: row.session || undefined,
-                keyLevel: row.key_level || undefined,
-                entryTimeFrame: row.entry_time_frame || undefined,
-            })) as Trade[];
-
-            setTrades(fetchedTrades);
-            setIsTradesLoading(false);
-        };
-
-        fetchTrades();
-
-        // Subscribe to realtime changes
-        const channel = supabase
-            .channel('trades_changes')
-            .on('postgres_changes', {
-                event: '*',
-                schema: 'public',
-                table: 'trades',
-                filter: `account_id=eq.${selectedAccountId}`
-            }, () => {
-                fetchTrades();
-            })
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [user, selectedAccountId, toast]);
+    // Filter trades by selected account
+    const trades = useMemo(() => {
+        if (!selectedAccountId) return allTrades;
+        return allTrades.filter(t => t.accountId === selectedAccountId);
+    }, [allTrades, selectedAccountId]);
 
     const addTrade = useCallback(async (trade: Omit<Trade, 'id'>) => {
-        if (!user) {
-            throw new Error("User is not authenticated.");
-        }
-
         try {
-            const { data: tradeData, error: tradeError } = await supabase
-                .from('trades')
-                .insert({
-                    user_id: user.id,
-                    account_id: trade.accountId,
-                    date: trade.date.toISOString(),
-                    asset: trade.asset,
-                    strategy: trade.strategy,
-                    direction: trade.direction,
-                    entry_time: trade.entryTime || null,
-                    exit_time: trade.exitTime || null,
-                    entry_price: trade.entryPrice,
-                    sl: trade.sl,
-                    rr: trade.rr,
-                    exit_price: trade.exitPrice,
-                    result: trade.result,
-                    confidence: trade.confidence,
-                    mistakes: trade.mistakes || [],
-                    rules_followed: trade.rulesFollowed || [],
-                    model_followed: trade.modelFollowed || { week: [], day: [], trigger: [], ltf: [] },
-                    notes: trade.notes || null,
-                    screenshot_url: trade.screenshotURL || '',
-                    account_size: trade.accountSize,
-                    risk_percentage: trade.riskPercentage,
-                    pnl: trade.pnl,
-                    ticket: trade.ticket || null,
-                    pre_trade_emotion: trade.preTradeEmotion || null,
-                    post_trade_emotion: trade.postTradeEmotion || null,
-                    market_context: trade.marketContext || null,
-                    entry_reason: trade.entryReason || null,
-                    trade_feelings: trade.tradeFeelings || null,
-                    loss_analysis: trade.lossAnalysis || null,
-                    session: trade.session || null,
-                    key_level: trade.keyLevel || null,
-                    entry_time_frame: trade.entryTimeFrame || null,
-                })
-                .select()
-                .single();
+            const newTrade: Trade = {
+                ...trade,
+                id: crypto.randomUUID(),
+                date: new Date(trade.date),
+            };
 
-            if (tradeError) throw tradeError;
-
-            // Update account balance
-            if (trade.pnl !== 0) {
-                const { data: accountData } = await supabase
-                    .from('accounts')
-                    .select('current_balance')
-                    .eq('id', trade.accountId)
-                    .single();
-
-                if (accountData) {
-                    await supabase
-                        .from('accounts')
-                        .update({ current_balance: accountData.current_balance + trade.pnl })
-                        .eq('id', trade.accountId);
-                }
-            }
+            setAllTrades(prev => {
+                const updated = [...prev, newTrade].sort((a, b) =>
+                    new Date(a.date).getTime() - new Date(b.date).getTime()
+                );
+                saveStoredTrades(updated);
+                return updated;
+            });
 
             return true;
         } catch (error: any) {
             console.error("Error adding trade:", error);
             throw error;
         }
-    }, [user]);
+    }, []);
 
     const addMultipleTrades = useCallback(async (newTrades: Omit<Trade, 'id'>[]) => {
-        if (!user || newTrades.length === 0) return { success: false, addedCount: 0 };
+        if (newTrades.length === 0) return { success: false, addedCount: 0 };
 
         try {
-            const tradesToInsert = newTrades.map(trade => ({
-                user_id: user.id,
-                account_id: trade.accountId,
-                date: new Date(trade.date).toISOString(),
-                asset: trade.asset,
-                strategy: trade.strategy,
-                direction: trade.direction,
-                entry_time: trade.entryTime || null,
-                exit_time: trade.exitTime || null,
-                entry_price: trade.entryPrice,
-                sl: trade.sl,
-                rr: trade.rr,
-                exit_price: trade.exitPrice,
-                result: trade.result,
-                confidence: trade.confidence,
-                mistakes: trade.mistakes || [],
-                rules_followed: trade.rulesFollowed || [],
-                model_followed: trade.modelFollowed || { week: [], day: [], trigger: [], ltf: [] },
-                notes: trade.notes || null,
-                screenshot_url: trade.screenshotURL || '',
-                account_size: trade.accountSize,
-                risk_percentage: trade.riskPercentage,
-                pnl: trade.pnl,
-                ticket: trade.ticket || null,
-                pre_trade_emotion: trade.preTradeEmotion || null,
-                post_trade_emotion: trade.postTradeEmotion || null,
-                market_context: trade.marketContext || null,
-                entry_reason: trade.entryReason || null,
-                trade_feelings: trade.tradeFeelings || null,
-                loss_analysis: trade.lossAnalysis || null,
-                session: trade.session || null,
-                key_level: trade.keyLevel || null,
-                entry_time_frame: trade.entryTimeFrame || null,
+            const tradesToAdd: Trade[] = newTrades.map(trade => ({
+                ...trade,
+                id: crypto.randomUUID(),
+                date: new Date(trade.date),
             }));
 
-            const { error } = await supabase
-                .from('trades')
-                .insert(tradesToInsert);
-
-            if (error) throw error;
+            setAllTrades(prev => {
+                const updated = [...prev, ...tradesToAdd].sort((a, b) =>
+                    new Date(a.date).getTime() - new Date(b.date).getTime()
+                );
+                saveStoredTrades(updated);
+                return updated;
+            });
 
             toast({
                 title: "Import Successful",
-                description: "Batch import does not automatically update account balances. Please review balances manually if needed.",
+                description: `${newTrades.length} trades imported successfully.`,
             });
 
             return { success: true, addedCount: newTrades.length };
@@ -240,122 +118,38 @@ export function TradesProvider({ children }: { children: ReactNode }) {
             toast({ variant: "destructive", title: "Import Error", description: "Could not save the imported trades." });
             return { success: false, addedCount: 0 };
         }
-    }, [user, toast]);
+    }, [toast]);
 
     const updateTrade = useCallback(async (trade: Trade) => {
-        if (!user || !trade.id) {
-            throw new Error("User is not authenticated.");
+        if (!trade.id) {
+            throw new Error("Trade ID is required for update.");
         }
 
         try {
-            // Get original trade to calculate P&L difference
-            const { data: originalTrade } = await supabase
-                .from('trades')
-                .select('pnl')
-                .eq('id', trade.id)
-                .single();
-
-            const { error: tradeError } = await supabase
-                .from('trades')
-                .update({
-                    account_id: trade.accountId,
-                    date: trade.date.toISOString(),
-                    asset: trade.asset,
-                    strategy: trade.strategy,
-                    direction: trade.direction,
-                    entry_time: trade.entryTime || null,
-                    exit_time: trade.exitTime || null,
-                    entry_price: trade.entryPrice,
-                    sl: trade.sl,
-                    rr: trade.rr,
-                    exit_price: trade.exitPrice,
-                    result: trade.result,
-                    confidence: trade.confidence,
-                    mistakes: trade.mistakes || [],
-                    rules_followed: trade.rulesFollowed || [],
-                    model_followed: trade.modelFollowed || { week: [], day: [], trigger: [], ltf: [] },
-                    notes: trade.notes || null,
-                    screenshot_url: trade.screenshotURL || '',
-                    account_size: trade.accountSize,
-                    risk_percentage: trade.riskPercentage,
-                    pnl: trade.pnl,
-                    ticket: trade.ticket || null,
-                    pre_trade_emotion: trade.preTradeEmotion || null,
-                    post_trade_emotion: trade.postTradeEmotion || null,
-                    market_context: trade.marketContext || null,
-                    entry_reason: trade.entryReason || null,
-                    trade_feelings: trade.tradeFeelings || null,
-                    loss_analysis: trade.lossAnalysis || null,
-                    session: trade.session || null,
-                    key_level: trade.keyLevel || null,
-                    entry_time_frame: trade.entryTimeFrame || null,
-                })
-                .eq('id', trade.id);
-
-            if (tradeError) throw tradeError;
-
-            // Update account balance if P&L changed
-            if (originalTrade) {
-                const pnlDifference = trade.pnl - (originalTrade.pnl || 0);
-                if (pnlDifference !== 0) {
-                    const { data: accountData } = await supabase
-                        .from('accounts')
-                        .select('current_balance')
-                        .eq('id', trade.accountId)
-                        .single();
-
-                    if (accountData) {
-                        await supabase
-                            .from('accounts')
-                            .update({ current_balance: accountData.current_balance + pnlDifference })
-                            .eq('id', trade.accountId);
-                    }
-                }
-            }
+            setAllTrades(prev => {
+                const updated = prev.map(t =>
+                    t.id === trade.id ? { ...trade, date: new Date(trade.date) } : t
+                ).sort((a, b) =>
+                    new Date(a.date).getTime() - new Date(b.date).getTime()
+                );
+                saveStoredTrades(updated);
+                return updated;
+            });
 
             return true;
         } catch (error: any) {
             console.error("Error updating trade:", error);
             throw error;
         }
-    }, [user]);
+    }, []);
 
     const deleteTrade = useCallback(async (id: string) => {
-        if (!user) return false;
-
         try {
-            // Get trade details before deleting
-            const { data: tradeData } = await supabase
-                .from('trades')
-                .select('account_id, pnl')
-                .eq('id', id)
-                .single();
-
-            if (!tradeData) throw new Error("Trade not found");
-
-            // Delete the trade
-            const { error } = await supabase
-                .from('trades')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-
-            // Update account balance
-            if (tradeData.pnl !== 0) {
-                const { data: accountData } = await supabase
-                    .from('accounts')
-                    .select('current_balance')
-                    .eq('id', tradeData.account_id)
-                    .single();
-
-                if (accountData) {
-                    await supabase
-                        .from('accounts')
-                        .update({ current_balance: accountData.current_balance - tradeData.pnl })
-                        .eq('id', tradeData.account_id);
-                }
-            }
+            setAllTrades(prev => {
+                const updated = prev.filter(t => t.id !== id);
+                saveStoredTrades(updated);
+                return updated;
+            });
 
             toast({ title: "Trade Deleted", description: "The trade has been removed from your log." });
             return true;
@@ -364,23 +158,21 @@ export function TradesProvider({ children }: { children: ReactNode }) {
             toast({ variant: "destructive", title: "Error Deleting Trade", description: error.message || "Could not delete the trade." });
             return false;
         }
-    }, [user, toast]);
+    }, [toast]);
 
     const deleteAllTrades = useCallback(async (accountId: string) => {
-        if (!user || !accountId) return false;
+        if (!accountId) return false;
 
         try {
-            const { error } = await supabase
-                .from('trades')
-                .delete()
-                .eq('account_id', accountId)
-                .eq('user_id', user.id);
-
-            if (error) throw error;
+            setAllTrades(prev => {
+                const updated = prev.filter(t => t.accountId !== accountId);
+                saveStoredTrades(updated);
+                return updated;
+            });
 
             toast({
                 title: "All Trades Cleared",
-                description: "Your account balance for this account has not been reset. You may need to edit it manually in Settings.",
+                description: "All trades for this account have been deleted.",
             });
             return true;
         } catch (error) {
@@ -388,7 +180,7 @@ export function TradesProvider({ children }: { children: ReactNode }) {
             toast({ variant: "destructive", title: "Error", description: "Could not clear trade log." });
             return false;
         }
-    }, [user, toast]);
+    }, [toast]);
 
     const value = useMemo(() => ({
         trades,

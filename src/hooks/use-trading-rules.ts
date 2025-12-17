@@ -1,84 +1,76 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from './use-auth';
 import { useToast } from './use-toast';
 
+const TRADING_RULES_STORAGE_KEY = 'tradezend_trading_rules';
+const DEFAULT_TRADING_RULES = ['Follow the plan', 'Wait for confirmation', 'Check higher timeframe', 'Risk max 2% per trade', 'No trading during news'];
+
+const getStoredTradingRules = (): string[] => {
+  if (typeof window === 'undefined') return DEFAULT_TRADING_RULES;
+  try {
+    const stored = localStorage.getItem(TRADING_RULES_STORAGE_KEY);
+    if (!stored) {
+      localStorage.setItem(TRADING_RULES_STORAGE_KEY, JSON.stringify(DEFAULT_TRADING_RULES));
+      return DEFAULT_TRADING_RULES;
+    }
+    return JSON.parse(stored);
+  } catch {
+    return DEFAULT_TRADING_RULES;
+  }
+};
+
+const saveStoredTradingRules = (rules: string[]): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(TRADING_RULES_STORAGE_KEY, JSON.stringify(rules));
+};
+
 export function useTradingRules() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [tradingRules, setTradingRules] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      setTradingRules([]);
-      setIsLoaded(true);
-      return;
-    }
-
-    const fetchTradingRules = async () => {
-      const { data, error } = await supabase
-        .from('trading_rules')
-        .select('name')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching trading rules:', error);
-      }
-
-      setTradingRules((data || []).map((row: any) => row.name));
-      setIsLoaded(true);
-    };
-
-    fetchTradingRules();
-  }, [user]);
+    setTradingRules(getStoredTradingRules());
+    setIsLoaded(true);
+  }, []);
 
   const addTradingRule = useCallback(async (rule: string) => {
-    if (!user) return false;
-
     try {
-      const { error } = await supabase
-        .from('trading_rules')
-        .insert({ user_id: user.id, name: rule });
+      if (tradingRules.includes(rule)) {
+        toast({ variant: "destructive", title: "Error", description: "Rule already exists." });
+        return false;
+      }
 
-      if (error) throw error;
+      setTradingRules(prev => {
+        const updated = [...prev, rule];
+        saveStoredTradingRules(updated);
+        return updated;
+      });
 
       toast({ title: "Trading Rule Added", description: `"${rule}" has been added.` });
-      setTradingRules(prev => [...prev, rule]);
       return true;
-    } catch (error: any) {
-      if (error.code === '23505') {
-        toast({ variant: "destructive", title: "Error", description: "Rule already exists." });
-      } else {
-        toast({ variant: "destructive", title: "Error", description: "Could not add rule." });
-      }
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Could not add rule." });
       return false;
     }
-  }, [user, toast]);
+  }, [tradingRules, toast]);
 
   const deleteTradingRule = useCallback(async (rule: string) => {
-    if (!user) return false;
-
     try {
-      const { error } = await supabase
-        .from('trading_rules')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('name', rule);
-
-      if (error) throw error;
+      setTradingRules(prev => {
+        const updated = prev.filter(r => r !== rule);
+        saveStoredTradingRules(updated);
+        return updated;
+      });
 
       toast({ title: "Trading Rule Deleted", description: `"${rule}" has been removed.` });
-      setTradingRules(prev => prev.filter(r => r !== rule));
       return true;
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Could not delete rule." });
       return false;
     }
-  }, [user, toast]);
+  }, [toast]);
 
   return { tradingRules, addTradingRule, deleteTradingRule, isLoaded };
 }

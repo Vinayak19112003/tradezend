@@ -19,13 +19,12 @@ import { Loader2, Upload, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { importTrades } from '@/ai/flows/import-trades-flow';
 import type { Trade } from '@/lib/types';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/hooks/use-auth';
 import { useAccountContext } from '@/contexts/account-context';
+import { useTrades } from '@/contexts/trades-context';
 
 type ImportTradesProps = {
   onImport: (addedCount: number, skippedCount: number) => void;
-  addMultipleTrades: (newTrades: Omit<Trade, 'id'>[]) => Promise<{success: boolean, addedCount: number}>;
+  addMultipleTrades: (newTrades: Omit<Trade, 'id'>[]) => Promise<{ success: boolean, addedCount: number }>;
 };
 
 export default function ImportTrades({ onImport, addMultipleTrades }: ImportTradesProps) {
@@ -33,8 +32,8 @@ export default function ImportTrades({ onImport, addMultipleTrades }: ImportTrad
   const [isImporting, setIsImporting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
   const { accounts, selectedAccountId } = useAccountContext();
+  const { trades: existingTrades } = useTrades();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -45,11 +44,11 @@ export default function ImportTrades({ onImport, addMultipleTrades }: ImportTrad
   const handleImport = async () => {
     const selectedAccount = accounts.find(acc => acc.id === selectedAccountId);
 
-    if (!file || !user || !selectedAccount) {
+    if (!file || !selectedAccount) {
       toast({
         variant: "destructive",
         title: "Import Failed",
-        description: "Please select a file and ensure you are logged in and an account is selected.",
+        description: "Please select a file and ensure an account is selected.",
       });
       return;
     }
@@ -58,93 +57,79 @@ export default function ImportTrades({ onImport, addMultipleTrades }: ImportTrad
 
     const reader = new FileReader();
     reader.onload = async (e) => {
-        const fileDataUri = e.target?.result as string;
+      const fileDataUri = e.target?.result as string;
 
-        if (!fileDataUri) {
-            toast({
-                variant: 'destructive',
-                title: 'File Error',
-                description: 'Could not read the contents of the file.',
-            });
-            setIsImporting(false);
-            return;
+      if (!fileDataUri) {
+        toast({
+          variant: 'destructive',
+          title: 'File Error',
+          description: 'Could not read the contents of the file.',
+        });
+        setIsImporting(false);
+        return;
+      }
+
+      try {
+        const result = await importTrades({
+          fileDataUri,
+          accountId: selectedAccountId,
+          initialBalance: selectedAccount.initialBalance,
+        });
+        const tradesFromAI = result.trades;
+
+        if (!tradesFromAI || tradesFromAI.length === 0) {
+          toast({
+            variant: 'destructive',
+            title: 'AI Parsing Failed',
+            description: 'The AI could not extract any trades from your file.',
+          });
+          setIsImporting(false);
+          return;
         }
 
-        try {
-            const result = await importTrades({ 
-                fileDataUri, 
-                accountId: selectedAccountId,
-                initialBalance: selectedAccount.initialBalance,
-            });
-            const tradesFromAI = result.trades;
+        // Deduplication logic using localStorage trades
+        const existingTicketIds = new Set(
+          existingTrades
+            .filter(t => t.ticket)
+            .map(t => t.ticket as string)
+        );
 
-            if (!tradesFromAI || tradesFromAI.length === 0) {
-                toast({
-                    variant: 'destructive',
-                    title: 'AI Parsing Failed',
-                    description: 'The AI could not extract any trades from your file.',
-                });
-                setIsImporting(false);
-                return;
-            }
+        const newTrades = tradesFromAI.filter(trade => !trade.ticket || !existingTicketIds.has(trade.ticket));
+        const skippedCount = tradesFromAI.length - newTrades.length;
 
-            // Deduplication logic against Supabase
-            const newTicketIds = tradesFromAI.map(t => t.ticket).filter(Boolean) as string[];
-            const existingTicketIds = new Set<string>();
-
-            if (newTicketIds.length > 0) {
-                const { data, error } = await supabase
-                    .from('trades')
-                    .select('ticket')
-                    .eq('user_id', user.id)
-                    .eq('account_id', selectedAccountId)
-                    .in('ticket', newTicketIds);
-
-                if (!error && data) {
-                    data.forEach(row => {
-                        if (row.ticket) {
-                            existingTicketIds.add(row.ticket);
-                        }
-                    });
-                }
-            }
-            
-            const newTrades = tradesFromAI.filter(trade => !trade.ticket || !existingTicketIds.has(trade.ticket));
-            const skippedCount = tradesFromAI.length - newTrades.length;
-
-            if (newTrades.length > 0) {
-                const { success, addedCount } = await addMultipleTrades(newTrades);
-                if (success) {
-                    onImport(addedCount, skippedCount);
-                }
-            } else {
-                onImport(0, skippedCount);
-            }
-            
-            setIsOpen(false);
-            setFile(null);
-        } catch (error: any) {
-            console.error("AI import failed:", error);
-            const errorMessage = error.message && error.message.includes('Schema validation failed') 
-                ? "The AI returned data in an invalid format. Please check the file and try again."
-                : "An error occurred while the AI was processing your file. Please try again.";
-            toast({
-                variant: "destructive",
-                title: "AI Import Error",
-                description: errorMessage,
-            });
-        } finally {
-            setIsImporting(false);
+        if (newTrades.length > 0) {
+          const { success, addedCount } = await addMultipleTrades(newTrades);
+          if (success) {
+            onImport(addedCount, skippedCount);
+          }
+        } else {
+          onImport(0, skippedCount);
         }
+
+        setIsOpen(false);
+        setFile(null);
+      } catch (error: any) {
+        console.error("AI import failed:", error);
+        const errorMessage = error.message && error.message.includes('Schema validation failed')
+          ? "The AI returned data in an invalid format. Please check the file and try again."
+          : "An error occurred while the AI was processing your file. Please try again.";
+        toast({
+          variant: "destructive",
+          title: "AI Import Error",
+          description: errorMessage,
+        });
+      } finally {
+        setIsImporting(false);
+      }
     };
 
     reader.onerror = () => {
-        toast({
-            variant: 'destructive',
-            title: 'File Read Error',
-            description: 'There was an error reading the selected file.',
-        });
-        setIsImporting(false);
+      toast({
+        variant: 'destructive',
+        title: 'File Read Error',
+        description: 'There was an error reading the selected file.',
+      });
+      setIsImporting(false);
     };
 
     reader.readAsDataURL(file);
@@ -163,14 +148,14 @@ export default function ImportTrades({ onImport, addMultipleTrades }: ImportTrad
           <DialogTitle className='flex items-center gap-2'>
             <Wand2 className='h-5 w-5 text-primary' />
             AI-Powered Trade Import
-            </DialogTitle>
+          </DialogTitle>
           <DialogDescription>
             Upload a CSV, PDF, or image file and our AI will automatically parse your trades for the currently selected account. It will skip duplicates based on Ticket/Order ID.
           </DialogDescription>
         </DialogHeader>
         <div className="grid w-full max-w-sm items-center gap-1.5 py-4">
-            <Label htmlFor="import-file">Import File</Label>
-            <Input id="import-file" type="file" accept=".csv,.png,.jpg,.jpeg,.pdf" onChange={handleFileChange} />
+          <Label htmlFor="import-file">Import File</Label>
+          <Input id="import-file" type="file" accept=".csv,.png,.jpg,.jpeg,.pdf" onChange={handleFileChange} />
         </div>
         <DialogFooter>
           <DialogClose asChild>
