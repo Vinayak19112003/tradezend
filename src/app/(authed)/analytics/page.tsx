@@ -1,14 +1,10 @@
-
 "use client";
 
 /**
  * @fileoverview This file defines the Analysis page.
- * This page provides a deep dive into the user's trading data with various
- * analytical charts and tables. It fetches trade data based on a selectable
- * date range and passes it to different visualization components.
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import dynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
 import type { DateRange } from "react-day-picker";
@@ -18,9 +14,9 @@ import type { Trade } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TradingModelPage from "./trading-model-view";
 import { useTrades } from "@/contexts/trades-context";
+import { PageHeader } from "@/components/ui/page-header";
 
-// Dynamically import all charting components to reduce the initial bundle size.
-// Skeletons are shown as placeholders while the components load.
+// Dynamically import all charting components
 const CoreMetrics = dynamic(() => import('@/components/analysis/core-metrics'), { ssr: false, loading: () => <Skeleton className="h-[250px] w-full" /> });
 const RiskRewardMetrics = dynamic(() => import('@/components/analysis/risk-reward-metrics'), { ssr: false, loading: () => <Skeleton className="h-[250px] w-full" /> });
 const DrawdownStreakAnalysis = dynamic(() => import('@/components/analysis/drawdown-streak-analysis'), { ssr: false, loading: () => <Skeleton className="h-[250px] w-full" /> });
@@ -32,15 +28,10 @@ const PnlDistribution = dynamic(() => import('@/components/analysis/pnl-distribu
 const RMultipleDistribution = dynamic(() => import('@/components/analysis/r-multiple-distribution'), { ssr: false, loading: () => <Skeleton className="h-[400px]" /> });
 
 
-/**
- * The main component for the Analysis page.
- * It handles fetching trade data for a specific date range and rendering
- * the various analysis components within a tabbed interface.
- */
 export default function AnalyticsPage() {
     const { trades: allTrades } = useTrades();
     const [filteredTrades, setFilteredTrades] = useState<Trade[]>([]);
-    
+
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: startOfMonth(new Date()),
         to: new Date(),
@@ -63,14 +54,17 @@ export default function AnalyticsPage() {
 
     return (
         <div className="space-y-4 md:space-y-6">
+            <PageHeader
+                title="Performance Analytics"
+                description="Deep dive into your trading statistics."
+                action={<DateRangeFilter date={dateRange} onDateChange={setDateRange} />}
+            />
+
             <Tabs defaultValue="overview">
-                <div className="flex justify-between items-center">
-                    <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
-                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                        <TabsTrigger value="model">Trading Model</TabsTrigger>
-                    </TabsList>
-                     <DateRangeFilter date={dateRange} onDateChange={setDateRange} />
-                </div>
+                <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="model">Trading Model</TabsTrigger>
+                </TabsList>
                 <TabsContent value="overview" className="mt-4">
                     <div className="space-y-4 md:space-y-6 mt-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -83,8 +77,8 @@ export default function AnalyticsPage() {
                         <div className="w-full">
                             <DailyPerformance trades={filteredTrades} />
                         </div>
-                        
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                             <PnlDistribution trades={filteredTrades} />
                             <RMultipleDistribution trades={filteredTrades} />
                         </div>
@@ -95,7 +89,7 @@ export default function AnalyticsPage() {
                     </div>
                 </TabsContent>
                 <TabsContent value="model" className="mt-4">
-                   <TradingModelPage />
+                    <TradingModelPage />
                 </TabsContent>
             </Tabs>
         </div>
