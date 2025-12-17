@@ -29,6 +29,7 @@ const NAV_ITEMS = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { label: "Journal", icon: BookOpen, href: "/journal" },
     { label: "Analytics", icon: BarChart2, href: "/analytics" },
+    { label: "Performance", icon: LineChart, href: "/performance" },
 ];
 
 export function AppSidebar() {
