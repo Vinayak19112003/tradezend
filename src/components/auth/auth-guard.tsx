@@ -12,9 +12,17 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
+    const client = supabase;
+    if (!client) {
+      // Backend not configured: send the user to login, which explains setup.
+      router.replace('/login');
+      setIsLoading(false);
+      return;
+    }
+
     const checkAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await client.auth.getSession();
 
         if (!session) {
           // Redirect to login if not authenticated
@@ -35,7 +43,7 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
     checkAuth();
 
     // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         setIsAuthenticated(false);
         router.replace('/login');

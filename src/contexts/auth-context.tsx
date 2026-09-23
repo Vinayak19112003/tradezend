@@ -21,10 +21,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    const client = supabase;
+    if (!client) {
+      // Backend not configured: no session possible, stop loading.
+      setIsLoading(false);
+      return;
+    }
+
     // 1. Check active session
     const checkSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await client.auth.getSession();
         setSession(session);
         setUser(session?.user ?? null);
       } catch (error) {
@@ -37,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkSession();
 
     // 2. Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = client.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
@@ -52,8 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await supabase.auth.signOut();
-      setUser(null);
+      if (supabase) {
+        await supabase.auth.signOut();
+      }      setUser(null);
       setSession(null);
       router.push('/login');
       router.refresh();

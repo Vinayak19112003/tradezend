@@ -29,7 +29,7 @@ export function TradesProvider({ children }: { children: ReactNode }) {
 
     // Load trades from Supabase
     const fetchTrades = useCallback(async () => {
-        if (!user) {
+        if (!user || !supabase) {
             setAllTrades([]);
             setIsTradesLoading(false);
             return;
@@ -94,7 +94,7 @@ export function TradesProvider({ children }: { children: ReactNode }) {
     }, [allTrades, selectedAccountId]);
 
     const addTrade = useCallback(async (trade: Omit<Trade, 'id'>) => {
-        if (!user) return false;
+        if (!user || !supabase) return false;
         try {
             // Prepare payload for DB (convert camelCase to snake_case)
             const payload = {
@@ -159,7 +159,8 @@ export function TradesProvider({ children }: { children: ReactNode }) {
     }, [user, fetchTrades, toast]);
 
     const addMultipleTrades = useCallback(async (newTrades: Omit<Trade, 'id'>[]) => {
-        if (!user || newTrades.length === 0) return { success: false, addedCount: 0 };
+        const client = supabase;
+        if (!user || !client || newTrades.length === 0) return { success: false, addedCount: 0 };
 
         try {
             const payload = newTrades.map(trade => ({
@@ -197,7 +198,7 @@ export function TradesProvider({ children }: { children: ReactNode }) {
                 entry_time_frame: trade.entryTimeFrame,
             }));
 
-            const { error } = await supabase
+            const { error } = await client
                 .from('trades')
                 .insert(payload);
 
@@ -219,7 +220,7 @@ export function TradesProvider({ children }: { children: ReactNode }) {
 
     const updateTrade = useCallback(async (trade: Trade) => {
         if (!trade.id) throw new Error("Trade ID is required for update.");
-        if (!user) return false;
+        if (!user || !supabase) return false;
 
         try {
             // Map to snake_case
@@ -275,7 +276,7 @@ export function TradesProvider({ children }: { children: ReactNode }) {
     }, [user, fetchTrades, toast]);
 
     const deleteTrade = useCallback(async (id: string) => {
-        if (!user) return false;
+        if (!user || !supabase) return false;
         try {
             const { error } = await supabase
                 .from('trades')
@@ -296,10 +297,11 @@ export function TradesProvider({ children }: { children: ReactNode }) {
     }, [user, fetchTrades, toast]);
 
     const deleteAllTrades = useCallback(async (accountId: string) => {
-        if (!accountId || !user) return false;
+        const client = supabase;
+        if (!accountId || !user || !client) return false;
 
         try {
-            const { error } = await supabase
+            const { error } = await client
                 .from('trades')
                 .delete()
                 .eq('account_id', accountId)

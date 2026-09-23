@@ -17,7 +17,7 @@ export function useAccounts() {
 
   // Fetch accounts from Supabase
   const fetchAccounts = useCallback(async () => {
-    if (!user) {
+    if (!user || !supabase) {
       setAccounts([]);
       setIsLoaded(true);
       return;
@@ -80,7 +80,7 @@ export function useAccounts() {
   }, [fetchAccounts]);
 
   const addAccount = useCallback(async (newAccount: Omit<Account, 'id' | 'currentBalance'>) => {
-    if (!user) return false;
+    if (!user || !supabase) return false;
     try {
       const payload = {
         user_id: user.id,
@@ -106,7 +106,7 @@ export function useAccounts() {
   }, [user, toast, fetchAccounts]);
 
   const updateAccount = useCallback(async (accountId: string, updatedData: Omit<Account, 'id' | 'currentBalance'>) => {
-    if (!user) return false;
+    if (!user || !supabase) return false;
     try {
       // First, get the current account to calculate balance difference
       const currentAccount = accounts.find(a => a.id === accountId);
@@ -140,7 +140,7 @@ export function useAccounts() {
   }, [user, accounts, toast, fetchAccounts]);
 
   const deleteAccount = useCallback(async (accountId: string) => {
-    if (!user) return false;
+    if (!user || !supabase) return false;
     if (accounts.length <= 1) {
       toast({ variant: "destructive", title: "Cannot Delete", description: "You must have at least one account." });
       return false;
