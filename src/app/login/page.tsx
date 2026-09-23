@@ -7,7 +7,7 @@ import * as z from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -41,6 +41,11 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
+      if (!supabase) {
+        throw new Error(
+          "Backend not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable login."
+        );
+      }
       const { error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
@@ -92,6 +97,12 @@ export default function LoginPage() {
           </div>
 
           <div className="backdrop-blur-xl border border-white/5 rounded-2xl p-6 bg-zinc-900/50 shadow-2xl">
+            {!isSupabaseConfigured && (
+              <p className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                Backend not configured. Set NEXT_PUBLIC_SUPABASE_URL and
+                NEXT_PUBLIC_SUPABASE_ANON_KEY to enable login.
+              </p>
+            )}
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField

@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTradeForm } from "@/contexts/trade-form-context";
-import { ShimmerButton } from "@/components/ui/shimmer-button";
+import ShimmerButton from "@/components/ui/shimmer-button";
 import { AccountSwitcher } from "./account-switcher";
 import { UserMenu } from "./user-menu";
 import { Logo } from "../logo";
